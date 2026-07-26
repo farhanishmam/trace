@@ -28,7 +28,7 @@ hide:
 
 <div class="trace-resource-links">
   <a class="md-button md-button--primary" href="https://github.com/maveryn/trace">Code</a>
-  <a class="md-button" href="https://github.com/maveryn/trace/blob/main/paper.pdf">Paper</a>
+  <a class="md-button" href="https://arxiv.org/abs/2607.19790">Paper</a>
   <a class="md-button" href="research/">Research</a>
   <a class="md-button" href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24">Collection</a>
   <a class="md-button" href="https://huggingface.co/datasets/maveryn/trace">Dataset</a>
