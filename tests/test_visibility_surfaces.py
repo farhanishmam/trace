@@ -97,10 +97,16 @@ def test_landing_pages_collapse_the_full_benchmark_table() -> None:
 def test_primary_resource_links_stay_focused() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     badge_block = readme.split('<p align="center">', 1)[1].split("</p>", 1)[0]
-    assert badge_block.count("<a href=") == 4
-    for label in ("Live Demo", "Paper", "Hugging Face Collection", "Dataset"):
+    assert badge_block.count("<a href=") == 5
+    for label in (
+        "Live Demo",
+        "Project Page",
+        "Paper",
+        "Hugging Face Collection",
+        "Dataset",
+    ):
         assert f'alt="{label}"' in badge_block
-    for label in ("Project Page", "Reproduce", "3B Model", "7B Model"):
+    for label in ("Reproduce", "3B Model", "7B Model"):
         assert f'alt="{label}"' not in badge_block
 
     docs = (REPO_ROOT / "docs/README.md").read_text(encoding="utf-8")

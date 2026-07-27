@@ -13,6 +13,7 @@ points**, respectively. [See the transfer results](#external-benchmark-transfer)
 
 <p align="center">
   <a href="https://huggingface.co/spaces/maveryn/trace"><img alt="Live Demo" src="https://img.shields.io/badge/HuggingFace-Live_Demo-2563eb?style=for-the-badge"></a>
+  <a href="https://maveryn.github.io/trace/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-0f766e?style=for-the-badge"></a>
   <a href="https://arxiv.org/abs/2607.19790"><img alt="Paper" src="https://img.shields.io/badge/arXiv-Paper-b31b1b?style=for-the-badge"></a>
   <a href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24"><img alt="Hugging Face Collection" src="https://img.shields.io/badge/HuggingFace-Collection-f59e0b?style=for-the-badge"></a>
   <a href="https://huggingface.co/datasets/maveryn/trace"><img alt="Dataset" src="https://img.shields.io/badge/HuggingFace-Dataset-f59e0b?style=for-the-badge"></a>
