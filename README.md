@@ -7,14 +7,15 @@ post-training. Each example includes an image, prompt, typed answer,
 image-space annotation, verifier metadata, and execution trace. The registry
 contains 1,000 tasks across 277 scenes and 11 visual domains.
 
+Training Qwen2.5-VL-3B and 7B on 64,000 Trace instances improved the
+macro-average across 24 external benchmarks by **+3.51** and **+4.06 percentage
+points**, respectively. [See the transfer results](#external-benchmark-transfer).
+
 <p align="center">
-  <a href="https://maveryn.github.io/trace/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-14324a?style=for-the-badge"></a>
   <a href="https://huggingface.co/spaces/maveryn/trace"><img alt="Live Demo" src="https://img.shields.io/badge/HuggingFace-Live_Demo-2563eb?style=for-the-badge"></a>
-  <a href="https://arxiv.org/abs/2607.19790"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2607.19790-b31b1b?style=for-the-badge"></a>
-  <a href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24"><img alt="Hugging Face Collection" src="https://img.shields.io/badge/HuggingFace-Collection-f59e0b?style=for-the-badge"></a>
+  <a href="https://arxiv.org/abs/2607.19790"><img alt="Paper" src="https://img.shields.io/badge/arXiv-Paper-b31b1b?style=for-the-badge"></a>
   <a href="https://huggingface.co/datasets/maveryn/trace"><img alt="Dataset" src="https://img.shields.io/badge/HuggingFace-Dataset-f59e0b?style=for-the-badge"></a>
-  <a href="https://huggingface.co/maveryn/trace-qwen2.5-vl-3b"><img alt="3B Model" src="https://img.shields.io/badge/HuggingFace-3B_Model-f59e0b?style=for-the-badge"></a>
-  <a href="https://huggingface.co/maveryn/trace-qwen2.5-vl-7b"><img alt="7B Model" src="https://img.shields.io/badge/HuggingFace-7B_Model-f59e0b?style=for-the-badge"></a>
+  <a href="https://github.com/maveryn/trace/blob/main/docs/research/REPRODUCING_RESULTS.md"><img alt="Reproduce" src="https://img.shields.io/badge/Results-Reproduce-159b91?style=for-the-badge"></a>
 </p>
 
 ![Trace examples across charts, games, geometry, graphs, icons, illustrations, pages, physics, puzzles, symbolic reasoning, and 3D scenes](docs/assets/paper-domain-montage/trace-paper-domain-montage.png)
@@ -101,6 +102,9 @@ The table reports all 24 external benchmarks for the matched 3B and 7B
 comparisons. Parenthesized values are mean seed-paired TRACE-minus-Base changes
 in percentage points.
 
+<details>
+<summary><strong>View all 24 benchmark results</strong></summary>
+
 <!-- trace-eval-v1-base-trace-table:start -->
 | Benchmark | 3B Base | 3B TRACE (Δ) | 7B Base | 7B TRACE (Δ) |
 | --- | ---: | ---: | ---: | ---: |
@@ -136,11 +140,17 @@ in percentage points.
 | MME-Reasoning | 22.62 ± 1.81 | 25.06 ± 1.53 (+2.44) | 25.17 ± 1.18 | 28.03 ± 0.89 (+2.86) |
 <!-- trace-eval-v1-base-trace-table:end -->
 
+</details>
+
 The [research page](docs/research/README.md#external-benchmark-results) includes
 the full eight-model comparison. Machine-readable per-seed scores are available
 in [`results.json`](https://github.com/maveryn/trace/blob/rlvr/rlvr/evaluation/trace_eval/results.json).
 
 ## Released Models
+
+The [Trace collection](https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24)
+groups the interactive Space, dataset, checkpoints, paper, and evaluation
+artifacts in one place.
 
 | Released checkpoint | Base model |
 | --- | --- |
@@ -344,7 +354,10 @@ attributions are listed in
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, review, and pull
-request guidance.
+request guidance. Browse [open issues](https://github.com/maveryn/trace/issues)
+for scoped work, or use
+[Discussions](https://github.com/maveryn/trace/discussions) for questions,
+integration ideas, and reproduction reports.
 
 ## Licensing
 

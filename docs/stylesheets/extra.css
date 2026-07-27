@@ -115,6 +115,18 @@ pre {
   max-width: 48rem;
 }
 
+.trace-hero__evidence {
+  color: var(--trace-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  margin: 1.1rem auto 0;
+  max-width: 46rem;
+}
+
+.trace-hero__evidence strong {
+  color: var(--trace-teal-text);
+}
+
 .trace-resource-links {
   align-items: center;
   display: flex;

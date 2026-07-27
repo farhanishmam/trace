@@ -55,6 +55,7 @@ EXPECTED_RESEARCH_BENCHMARKS = (
 )
 PIPELINE_ASSET = REPO_ROOT / "docs/assets/paper-instance-pipeline/trace-instance-pipeline.png"
 INFERENCE_EXAMPLE_ASSET = REPO_ROOT / "docs/assets/examples/trace-match3-validation-example.png"
+SOCIAL_PREVIEW_ASSET = REPO_ROOT / "docs/assets/social/trace-social-preview.png"
 
 
 def _metadata(canonical_url: str) -> str:
@@ -68,8 +69,8 @@ def _metadata(canonical_url: str) -> str:
     <meta property="og:url" content="{canonical_url}">
     <meta property="og:image" content="{image_url}">
     <meta property="og:image:alt" content="Trace visual reasoning domains">
-    <meta property="og:image:width" content="1512">
-    <meta property="og:image:height" content="780">
+    <meta property="og:image:width" content="{check_docs_site.SOCIAL_IMAGE_SIZE[0]}">
+    <meta property="og:image:height" content="{check_docs_site.SOCIAL_IMAGE_SIZE[1]}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Trace">
     <meta name="twitter:description" content="Visual reasoning documentation">
@@ -116,7 +117,7 @@ def _write_valid_site(site_root: Path) -> None:
           <a href="#overview%20anchor">Overview</a>
           <a href="research/?source=home#methods">Research</a>
           <link rel="stylesheet" href="/trace/assets/styles/site.css?v=1">
-          <img src="assets/paper%2Ddomain%2Dmontage/trace%2Dpaper%2Ddomain%2Dmontage.png">
+          <img src="assets/social/trace-social-preview.png">
         </body></html>
         """,
         encoding="utf-8",
@@ -237,7 +238,7 @@ def test_check_docs_site_rejects_wrong_social_image_dimensions(
     image = site_root / check_docs_site.SOCIAL_IMAGE_PATH
     image.write_bytes(_png_header(1200, 630))
 
-    with pytest.raises(check_docs_site.DocsSiteError, match="must be 1512 x 780"):
+    with pytest.raises(check_docs_site.DocsSiteError, match="must be 1280 x 640"):
         check_docs_site.check_docs_site(site_root)
 
 
@@ -309,6 +310,13 @@ def test_docs_homepage_uses_a_balanced_hero_wordmark() -> None:
     text = (REPO_ROOT / "docs" / "README.md").read_text(encoding="utf-8")
     assert 'class="trace-hero__brand"' in text
     assert 'class="trace-hero__mark" src="assets/brand/trace-mark.svg"' in text
+
+
+def test_social_preview_matches_the_public_image_contract() -> None:
+    data = SOCIAL_PREVIEW_ASSET.read_bytes()
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+    assert struct.unpack(">II", data[16:24]) == check_docs_site.SOCIAL_IMAGE_SIZE
+    assert SOCIAL_PREVIEW_ASSET.stat().st_size < 1_000_000
 
 
 def test_readme_inference_uses_a_trace_validation_example() -> None:

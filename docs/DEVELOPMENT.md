@@ -1,5 +1,13 @@
 # Development
 
+## Community
+
+Use [GitHub Issues](https://github.com/maveryn/trace/issues) for concrete,
+scoped work and reproducible bug reports. Use
+[GitHub Discussions](https://github.com/maveryn/trace/discussions) for
+questions, integration ideas, and reproduction reports that are not yet a
+specific change request.
+
 ## Source Layout
 
 - `src/trace_tasks/core/`: generation, identity, validation, trace, reward, and export infrastructure
