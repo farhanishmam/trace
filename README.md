@@ -9,6 +9,7 @@ contains 1,000 tasks across 277 scenes and 11 visual domains.
 
 <p align="center">
   <a href="https://maveryn.github.io/trace/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-14324a?style=for-the-badge"></a>
+  <a href="https://huggingface.co/spaces/maveryn/trace"><img alt="Live Demo" src="https://img.shields.io/badge/HuggingFace-Live_Demo-2563eb?style=for-the-badge"></a>
   <a href="https://arxiv.org/abs/2607.19790"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2607.19790-b31b1b?style=for-the-badge"></a>
   <a href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24"><img alt="Hugging Face Collection" src="https://img.shields.io/badge/HuggingFace-Collection-f59e0b?style=for-the-badge"></a>
   <a href="https://huggingface.co/datasets/maveryn/trace"><img alt="Dataset" src="https://img.shields.io/badge/HuggingFace-Dataset-f59e0b?style=for-the-badge"></a>
@@ -17,6 +18,42 @@ contains 1,000 tasks across 277 scenes and 11 visual domains.
 </p>
 
 ![Trace examples across charts, games, geometry, graphs, icons, illustrations, pages, physics, puzzles, symbolic reasoning, and 3D scenes](docs/assets/paper-domain-montage/trace-paper-domain-montage.png)
+
+## Try Trace
+
+<p align="center">
+  <a href="https://huggingface.co/spaces/maveryn/trace"><img alt="Open Trace Space" src="https://img.shields.io/badge/Open-Trace_Space-2563eb?style=for-the-badge"></a>
+  <a href="https://colab.research.google.com/github/maveryn/trace/blob/main/examples/notebooks/trace_quickstart.ipynb"><img alt="Open in Colab" src="https://img.shields.io/badge/Open_in-Colab-f9ab00?style=for-the-badge"></a>
+</p>
+
+Trace is for researchers and engineers building verifiable VLM post-training,
+synthetic-data, and evaluation pipelines.
+
+Explore all 1,000 tasks in the browser, including their deterministic images,
+prompts, typed supervision, reward contracts, annotation overlays, and public
+execution traces. Or generate the default example locally from the exact
+revision used by the demo:
+
+```bash
+python -m pip install \
+  "trace-tasks @ git+https://github.com/maveryn/trace.git@bb7fdd1fc8a0f8a2e3db7efe910a14e81d58feb7"
+```
+
+```python
+from trace_tasks import generate_task
+
+sample = generate_task(
+    "task_geometry__graph_paper__polygon_area_value",
+    seed=42,
+    max_attempts=100,
+)
+sample.image.save("trace-example.png")
+print(sample.prompt)
+print(sample.answer_gt.to_dict())
+print(sample.annotation_gt.to_dict())
+```
+
+![The Trace Space showing a generated task, its public annotation overlay, prompt, and deterministic selectors](docs/assets/examples/trace-space-quickstart.png)
 
 ## How Trace Works
 

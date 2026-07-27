@@ -27,7 +27,8 @@ hide:
 </p>
 
 <div class="trace-resource-links">
-  <a class="md-button md-button--primary" href="https://github.com/maveryn/trace">Code</a>
+  <a class="md-button md-button--primary" href="https://huggingface.co/spaces/maveryn/trace">Live Demo</a>
+  <a class="md-button" href="https://github.com/maveryn/trace">Code</a>
   <a class="md-button" href="https://arxiv.org/abs/2607.19790">Paper</a>
   <a class="md-button" href="research/">Research</a>
   <a class="md-button" href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24">Collection</a>
@@ -65,6 +66,51 @@ hide:
     One example from each Trace domain: charts, games, geometry,
     graphs, icons, illustrations, pages, physics, puzzles, symbolic reasoning,
     and 3D scenes.
+  </figcaption>
+</figure>
+
+## Try Trace
+
+<div class="trace-resource-links">
+  <a class="md-button md-button--primary" href="https://huggingface.co/spaces/maveryn/trace">Open Trace Space</a>
+  <a class="md-button" href="https://colab.research.google.com/github/maveryn/trace/blob/main/examples/notebooks/trace_quickstart.ipynb">Open in Colab</a>
+</div>
+
+Trace is for researchers and engineers building verifiable VLM post-training,
+synthetic-data, and evaluation pipelines.
+
+Explore all 1,000 tasks in the browser, including their deterministic images,
+prompts, typed supervision, reward contracts, annotation overlays, and public
+execution traces. Or generate the default example locally from the exact
+revision used by the demo:
+
+```bash
+python -m pip install \
+  "trace-tasks @ git+https://github.com/maveryn/trace.git@bb7fdd1fc8a0f8a2e3db7efe910a14e81d58feb7"
+```
+
+```python
+from trace_tasks import generate_task
+
+sample = generate_task(
+    "task_geometry__graph_paper__polygon_area_value",
+    seed=42,
+    max_attempts=100,
+)
+sample.image.save("trace-example.png")
+print(sample.prompt)
+print(sample.answer_gt.to_dict())
+print(sample.annotation_gt.to_dict())
+```
+
+<figure class="trace-paper-figure">
+  <img
+    src="assets/examples/trace-space-quickstart.png"
+    alt="The Trace Space showing a generated task, its public annotation overlay, prompt, and deterministic selectors."
+  >
+  <figcaption>
+    The public Space exposes the same deterministic task and verifier contracts
+    as the Python package.
   </figcaption>
 </figure>
 

@@ -759,6 +759,20 @@ def _parse_json_output(
         ) from exc
 
 
+def _venv_executable(
+    venv_root: Path,
+    name: str,
+    *,
+    os_name: str | None = None,
+) -> Path:
+    """Return an installed virtual-environment command on POSIX or Windows."""
+
+    resolved_os_name = os.name if os_name is None else os_name
+    if resolved_os_name == "nt":
+        return venv_root / "Scripts" / f"{name}.exe"
+    return venv_root / "bin" / name
+
+
 def check_installed_cli(
     wheel_path: Path,
     workspace: Path,
@@ -767,8 +781,8 @@ def check_installed_cli(
 ) -> None:
     venv_root = workspace / "venv"
     venv.EnvBuilder(with_pip=True, clear=True).create(venv_root)
-    bin_dir = venv_root / "bin"
-    pip = bin_dir / "python"
+    pip = _venv_executable(venv_root, "python")
+    bin_dir = pip.parent
     install_command: list[str | os.PathLike[str]] = [
         pip,
         "-m",
@@ -793,7 +807,11 @@ def check_installed_cli(
     _run(install_command, cwd=smoke_root, env=clean_env)
 
     listed = _parse_json_output(
-        _run([bin_dir / "trace-list", "--json"], cwd=smoke_root, env=clean_env),
+        _run(
+            [_venv_executable(venv_root, "trace-list"), "--json"],
+            cwd=smoke_root,
+            env=clean_env,
+        ),
         "trace-list",
     )
     if (
@@ -807,7 +825,7 @@ def check_installed_cli(
     generated = _parse_json_output(
         _run(
             [
-                bin_dir / "trace-generate",
+                _venv_executable(venv_root, "trace-generate"),
                 "--task",
                 REPRESENTATIVE_TASKS["geometry"],
                 "--samples-per-task",
@@ -832,7 +850,11 @@ def check_installed_cli(
 
     validation = _parse_json_output(
         _run(
-            [bin_dir / "trace-validate", dataset_root, "--json"],
+            [
+                _venv_executable(venv_root, "trace-validate"),
+                dataset_root,
+                "--json",
+            ],
             cwd=smoke_root,
             env=clean_env,
         ),
@@ -845,7 +867,7 @@ def check_installed_cli(
     exported = _parse_json_output(
         _run(
             [
-                bin_dir / "trace-export",
+                _venv_executable(venv_root, "trace-export"),
                 dataset_root,
                 "--output",
                 export_path,
