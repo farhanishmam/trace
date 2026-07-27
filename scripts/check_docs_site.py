@@ -15,10 +15,10 @@ from urllib.parse import unquote, urlsplit
 SITE_URL = "https://maveryn.github.io/trace/"
 SITE_PATH_PREFIX = "/trace"
 SOCIAL_IMAGE_URL = (
-    f"{SITE_URL}assets/paper-domain-montage/trace-paper-domain-montage.png"
+    f"{SITE_URL}assets/social/trace-social-preview.png"
 )
-SOCIAL_IMAGE_PATH = Path("assets/paper-domain-montage/trace-paper-domain-montage.png")
-SOCIAL_IMAGE_SIZE = (1512, 780)
+SOCIAL_IMAGE_PATH = Path("assets/social/trace-social-preview.png")
+SOCIAL_IMAGE_SIZE = (1280, 640)
 REQUIRED_PAGES = {Path("index.html"), Path("research/index.html")}
 NONCANONICAL_PAGES = {Path("404.html")}
 _SITE_PARTS = urlsplit(SITE_URL)

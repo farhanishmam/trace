@@ -26,15 +26,19 @@ hide:
   trace.
 </p>
 
+<p class="trace-hero__evidence">
+  Training Qwen2.5-VL-3B and 7B on 64,000 Trace instances improved the
+  macro-average across 24 external benchmarks by <strong>+3.51</strong> and
+  <strong>+4.06 percentage points</strong>, respectively.
+  <a href="#external-benchmark-transfer">See the transfer results.</a>
+</p>
+
 <div class="trace-resource-links">
   <a class="md-button md-button--primary" href="https://huggingface.co/spaces/maveryn/trace">Live Demo</a>
   <a class="md-button" href="https://github.com/maveryn/trace">Code</a>
   <a class="md-button" href="https://arxiv.org/abs/2607.19790">Paper</a>
-  <a class="md-button" href="research/">Research</a>
-  <a class="md-button" href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24">Collection</a>
   <a class="md-button" href="https://huggingface.co/datasets/maveryn/trace">Dataset</a>
-  <a class="md-button" href="https://huggingface.co/maveryn/trace-qwen2.5-vl-3b">3B Model</a>
-  <a class="md-button" href="https://huggingface.co/maveryn/trace-qwen2.5-vl-7b">7B Model</a>
+  <a class="md-button" href="research/REPRODUCING_RESULTS/">Reproduce</a>
 </div>
 </div>
 
@@ -201,6 +205,9 @@ The table reports all 24 external benchmarks for the matched 3B and 7B
 comparisons. Parenthesized values are mean seed-paired TRACE-minus-Base changes
 in percentage points.
 
+<details markdown="1">
+<summary><strong>View all 24 benchmark results</strong></summary>
+
 <!-- trace-eval-v1-base-trace-table:start -->
 | Benchmark | 3B Base | 3B TRACE (Δ) | 7B Base | 7B TRACE (Δ) |
 | --- | ---: | ---: | ---: | ---: |
@@ -236,10 +243,16 @@ in percentage points.
 | MME-Reasoning | 22.62 ± 1.81 | 25.06 ± 1.53 (+2.44) | 25.17 ± 1.18 | 28.03 ± 0.89 (+2.86) |
 <!-- trace-eval-v1-base-trace-table:end -->
 
+</details>
+
 The [research page](research/README.md#external-benchmark-results) includes the
 full eight-model comparison and links to the evaluation artifacts.
 
 ## Released models
+
+The [Trace collection](https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24)
+groups the interactive Space, dataset, checkpoints, paper, and evaluation
+artifacts in one place.
 
 | Released checkpoint | Base model |
 | --- | --- |

@@ -36,6 +36,9 @@ The tools are:
 - `generate_release_gallery.py` regenerates the deterministic 11-domain
   gallery under `docs/assets/gallery/`, its hero montage, and the manifest at
   `docs/gallery/manifest.v1.json`.
+- `generate_social_preview.py` composes the `1280x640` repository and website
+  social preview from the committed Trace mark, domain montage, and verified
+  headline results.
 
 Scripts added here must use the `trace_tasks` namespace, accept
 repository-relative or user-supplied paths, avoid credentials and uploads, and
