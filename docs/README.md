@@ -37,8 +37,8 @@ hide:
   <a class="md-button md-button--primary" href="https://huggingface.co/spaces/maveryn/trace">Live Demo</a>
   <a class="md-button" href="https://github.com/maveryn/trace">Code</a>
   <a class="md-button" href="https://arxiv.org/abs/2607.19790">Paper</a>
+  <a class="md-button" href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24">Collection</a>
   <a class="md-button" href="https://huggingface.co/datasets/maveryn/trace">Dataset</a>
-  <a class="md-button" href="research/REPRODUCING_RESULTS/">Reproduce</a>
 </div>
 </div>
 
@@ -141,36 +141,6 @@ aligned. Each finalized record contains the rendered problem, exact scoring
 contract, image-space annotation, and an execution-trace reference for
 inspection and replay.
 
-## TRACE validation
-
-The released checkpoints improve accuracy on 2,000 previously unseen
-instances generated from the same 1,000 task programs. Each model is evaluated
-once with decoding seed 42.
-
-<div class="trace-result-grid">
-  <div class="trace-result">
-    <span class="trace-result__model">Qwen2.5-VL-3B</span>
-    <div class="trace-result__scores">
-      <span><span class="trace-result__label">Base</span>24.45</span>
-      <span class="trace-result__arrow" aria-hidden="true">→</span>
-      <span><span class="trace-result__label">Trace</span>41.05</span>
-    </div>
-    <span class="trace-result__delta">Improvement: +16.60</span>
-  </div>
-  <div class="trace-result">
-    <span class="trace-result__model">Qwen2.5-VL-7B</span>
-    <div class="trace-result__scores">
-      <span><span class="trace-result__label">Base</span>34.25</span>
-      <span class="trace-result__arrow" aria-hidden="true">→</span>
-      <span><span class="trace-result__label">Trace</span>51.55</span>
-    </div>
-    <span class="trace-result__delta">Improvement: +17.30</span>
-  </div>
-</div>
-
-These results measure new realizations within the TRACE task distributions.
-The evaluation below measures transfer to external benchmarks.
-
 ## External benchmark transfer
 
 Qwen2.5-VL models trained on 64,000 Trace instances improve the macro-average
@@ -198,6 +168,9 @@ compare matched seeds.
     <span class="trace-result__delta">Paired improvement: +4.06 ± 0.41</span>
   </div>
 </div>
+
+On 2,000 unseen TRACE instances, accuracy improves from 24.45 to 41.05 at 3B
+and from 34.25 to 51.55 at 7B.
 
 ### Base versus TRACE by benchmark
 
