@@ -10,6 +10,7 @@ from PIL import Image
 import pytest
 import yaml
 
+from trace_tasks import generate_task
 from trace_tasks.core.annotation_sanitization import PUBLIC_IMAGE_ANNOTATION_TYPES
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,7 @@ if str(SPACE_ROOT) not in sys.path:
 from overlay import PUBLIC_ANNOTATION_TYPES, render_annotation_overlay  # noqa: E402
 from trace_demo import (  # noqa: E402
     DEFAULT_TASK_ID,
+    DISPLAY_PROMPT_MODE,
     MAX_SEED,
     PINNED_REVISION,
     build_catalog,
@@ -155,13 +157,17 @@ def test_space_overlay_type_set_stays_synced_with_public_abi() -> None:
 
 def test_space_default_generation_exposes_public_contracts() -> None:
     result = generate_demo(DEFAULT_TASK_ID, 42, catalog=build_catalog())
+    generated = generate_task(DEFAULT_TASK_ID, seed=42, params={}, max_attempts=100)
 
-    assert result.prompt
+    assert DISPLAY_PROMPT_MODE == "answer_only"
+    assert result.prompt == generated.prompt_variants[DISPLAY_PROMPT_MODE]
+    assert result.prompt != generated.prompt_variants["answer_and_annotation"]
     assert result.original_image.size == result.annotation_overlay.size
     assert result.ground_truth["answer_gt"]["type"]
     assert result.ground_truth["annotation_gt"]["type"]
     assert result.reward_contract["reward_contract_version"] == "v0"
     assert result.trace_summary["instance_seed"] == 42
+    assert result.trace_summary["prompt_selection"]["displayed_mode"] == "answer_only"
     assert result.public_trace["witness_symbolic"] == {
         "type": result.ground_truth["annotation_gt"]["type"],
         "count": len(result.ground_truth["annotation_gt"]["value"]),
@@ -244,6 +250,7 @@ def test_space_has_no_public_prediction_api_or_upload_input() -> None:
     assert "gr.File(" not in source
     assert "sources=" not in source
     assert 'gr.Button("Random question"' in source
+    assert 'label="Answer prompt"' in source
     assert "_random_question" in source
     assert "Random seed" not in source
     assert "domain.input(" in source

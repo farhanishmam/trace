@@ -38,6 +38,7 @@ DEFAULT_SCENE_ID = "graph_paper"
 DEFAULT_SEED = 42
 MAX_SEED = (1 << 53) - 1
 MAX_ATTEMPTS = 100
+DISPLAY_PROMPT_MODE = "answer_only"
 
 
 @dataclass(frozen=True)
@@ -220,6 +221,16 @@ def generate_demo(
         params={},
         max_attempts=MAX_ATTEMPTS,
     )
+    try:
+        display_prompt = output.prompt_variants[DISPLAY_PROMPT_MODE]
+    except KeyError as exc:
+        raise RuntimeError(
+            f"generated task is missing the {DISPLAY_PROMPT_MODE!r} prompt variant"
+        ) from exc
+    if not display_prompt.strip():
+        raise RuntimeError(
+            f"generated task has an empty {DISPLAY_PROMPT_MODE!r} prompt variant"
+        )
     answer_gt = json_safe(output.answer_gt.to_dict())
     annotation_gt = json_safe(output.annotation_gt.to_dict())
     reward_contract = resolve_reward_contract(
@@ -236,6 +247,16 @@ def generate_demo(
 
     query_spec = public_trace.get("query_spec", {})
     prompt_trace = query_spec if isinstance(query_spec, Mapping) else {}
+    prompt_selection = {
+        key: json_safe(prompt_trace[key])
+        for key in (
+            "template_id",
+            "prompt_variant",
+            "prompt_variant_active_key",
+        )
+        if key in prompt_trace
+    }
+    prompt_selection["displayed_mode"] = DISPLAY_PROMPT_MODE
     trace_summary = {
         "task_id": normalized_task_id,
         "taxonomy": {
@@ -253,15 +274,7 @@ def generate_demo(
         },
         "answer_type": output.answer_gt.type,
         "annotation_type": output.annotation_gt.type,
-        "prompt_selection": {
-            key: json_safe(prompt_trace[key])
-            for key in (
-                "template_id",
-                "prompt_variant",
-                "prompt_variant_active_key",
-            )
-            if key in prompt_trace
-        },
+        "prompt_selection": prompt_selection,
         "task_versions": json_safe(output.task_versions),
         "trace_sections": sorted(public_trace),
     }
@@ -314,7 +327,7 @@ def generate_demo(
     return DemoResult(
         original_image=output.image.convert("RGB"),
         annotation_overlay=overlay,
-        prompt=output.prompt,
+        prompt=display_prompt,
         ground_truth={
             "answer_gt": answer_gt,
             "annotation_gt": annotation_gt,

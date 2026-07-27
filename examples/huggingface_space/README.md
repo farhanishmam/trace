@@ -28,8 +28,8 @@ tags:
 
 This Space generates any of Trace's 1,000 deterministic, grounded
 visual-reasoning tasks. Select a domain, scene, task, and seed to inspect the
-rendered image, prompt, typed supervision, public annotation overlay, exact
-reward contract, and sanitized public execution trace.
+rendered image, answer-mode prompt, typed supervision, public annotation
+overlay, exact reward contract, and sanitized public execution trace.
 
 The Space is CPU-only and may need a short cold start. It accepts no uploads and
 stores no generated examples. The package dependency is pinned to the exact

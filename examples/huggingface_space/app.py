@@ -205,7 +205,7 @@ public execution trace comes from the same deterministic state.
                         interactive=False,
                     )
                 prompt = gr.Textbox(
-                    label="Prompt",
+                    label="Answer prompt",
                     lines=4,
                     interactive=False,
                     buttons=["copy"],
