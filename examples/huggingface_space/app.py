@@ -133,7 +133,6 @@ public execution trace comes from the same deterministic state.
             gr.HTML("<div class='trace-stat'><strong>1,000</strong>tasks</div>")
             gr.HTML("<div class='trace-stat'><strong>277</strong>scenes</div>")
             gr.HTML("<div class='trace-stat'><strong>11</strong>domains</div>")
-            gr.HTML("<div class='trace-stat'><strong>1 seed</strong>exact replay</div>")
 
         with gr.Row():
             with gr.Column(scale=7):

@@ -248,3 +248,13 @@ def test_space_has_no_public_prediction_api_or_upload_input() -> None:
     assert "Random seed" not in source
     assert "domain.input(" in source
     assert "scene_id.input(" in source
+
+
+def test_space_summary_only_shows_catalog_counts() -> None:
+    source = (SPACE_ROOT / "app.py").read_text(encoding="utf-8")
+
+    assert source.count("class='trace-stat'") == 3
+    assert "<strong>1,000</strong>tasks" in source
+    assert "<strong>277</strong>scenes" in source
+    assert "<strong>11</strong>domains" in source
+    assert "1 seed" not in source
