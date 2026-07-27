@@ -408,3 +408,18 @@ def test_default_constraints_are_required(tmp_path: Path) -> None:
         match="default constraints file does not exist",
     ):
         release_check._resolve_constraints(tmp_path, None)
+
+
+def test_virtual_environment_commands_are_portable(tmp_path: Path) -> None:
+    venv_root = tmp_path / "venv"
+
+    assert release_check._venv_executable(
+        venv_root,
+        "python",
+        os_name="posix",
+    ) == venv_root / "bin" / "python"
+    assert release_check._venv_executable(
+        venv_root,
+        "trace-list",
+        os_name="nt",
+    ) == venv_root / "Scripts" / "trace-list.exe"

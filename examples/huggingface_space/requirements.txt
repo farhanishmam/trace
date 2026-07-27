@@ -1,0 +1,18 @@
+Pillow==12.2.0
+CairoSVG==2.9.0
+tqdm==4.68.4
+PyYAML==6.0.3
+numpy==2.2.6
+scipy==1.15.3
+networkx==3.4.2
+rfc8785==0.1.4
+blake3==1.0.9
+zstandard==0.25.0
+cairocffi==1.7.1
+cffi==2.1.0
+pycparser==3.0
+cssselect2==0.9.0
+tinycss2==1.5.1
+webencodings==0.5.1
+defusedxml==0.7.1
+trace-tasks @ git+https://github.com/maveryn/trace.git@bb7fdd1fc8a0f8a2e3db7efe910a14e81d58feb7

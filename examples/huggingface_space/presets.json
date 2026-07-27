@@ -1,0 +1,137 @@
+{
+  "schema_version": "trace_space_presets_v1",
+  "presets": [
+    {
+      "domain": "charts",
+      "scene_id": "dashboard",
+      "task_id": "task_charts__dashboard__category_total_extremum_label",
+      "seed": 3201
+    },
+    {
+      "domain": "charts",
+      "scene_id": "radial_sankey",
+      "task_id": "task_charts__radial_sankey__dominant_endpoint_label",
+      "seed": 3202
+    },
+    {
+      "domain": "games",
+      "scene_id": "chess",
+      "task_id": "task_games__chess__colored_piece_kind_count",
+      "seed": 3301
+    },
+    {
+      "domain": "games",
+      "scene_id": "pacman",
+      "task_id": "task_games__pacman__route_score_value",
+      "seed": 3302
+    },
+    {
+      "domain": "geometry",
+      "scene_id": "graph_paper",
+      "task_id": "task_geometry__graph_paper__polygon_area_value",
+      "seed": 3401
+    },
+    {
+      "domain": "geometry",
+      "scene_id": "solid_revolution",
+      "task_id": "task_geometry__solid_revolution__revolution_double_cone_volume_value",
+      "seed": 3402
+    },
+    {
+      "domain": "graph",
+      "scene_id": "node_link",
+      "task_id": "task_graph__node_link__shortest_path_length",
+      "seed": 3501
+    },
+    {
+      "domain": "graph",
+      "scene_id": "metro",
+      "task_id": "task_graph__metro__shortest_path_length",
+      "seed": 3502
+    },
+    {
+      "domain": "icons",
+      "scene_id": "mirror_grid",
+      "task_id": "task_icons__mirror_grid__missing_mirror_cell_label",
+      "seed": 3601
+    },
+    {
+      "domain": "icons",
+      "scene_id": "wallpaper_panels",
+      "task_id": "task_icons__wallpaper_panels__same_pattern_as_reference_label",
+      "seed": 3602
+    },
+    {
+      "domain": "illustrations",
+      "scene_id": "isometric_farmstead",
+      "task_id": "task_illustrations__isometric_farmstead__terrain_elevation_extremum_label",
+      "seed": 3701
+    },
+    {
+      "domain": "illustrations",
+      "scene_id": "pixel_village",
+      "task_id": "task_illustrations__pixel_village__territory_object_count",
+      "seed": 3702
+    },
+    {
+      "domain": "symbolic",
+      "scene_id": "chemical_equation",
+      "task_id": "task_symbolic__chemical_equation__balanced_option_label",
+      "seed": 3801
+    },
+    {
+      "domain": "symbolic",
+      "scene_id": "clock",
+      "task_id": "task_symbolic__clock__full_time_readout",
+      "seed": 3802
+    },
+    {
+      "domain": "pages",
+      "scene_id": "map",
+      "task_id": "task_pages__map__destination_after_directions_label",
+      "seed": 3901
+    },
+    {
+      "domain": "pages",
+      "scene_id": "timeline",
+      "task_id": "task_pages__timeline__relative_position_event_label",
+      "seed": 3902
+    },
+    {
+      "domain": "physics",
+      "scene_id": "ray_optics",
+      "task_id": "task_physics__ray_optics__ray_bounce_count",
+      "seed": 4001
+    },
+    {
+      "domain": "physics",
+      "scene_id": "circuit_state_change",
+      "task_id": "task_physics__circuit_state_change__bulb_brightness_change_label",
+      "seed": 4002
+    },
+    {
+      "domain": "puzzles",
+      "scene_id": "sudoku",
+      "task_id": "task_puzzles__sudoku__marked_cell_value",
+      "seed": 4101
+    },
+    {
+      "domain": "puzzles",
+      "scene_id": "polyomino_assembly",
+      "task_id": "task_puzzles__polyomino_assembly__composition_result_label",
+      "seed": 4102
+    },
+    {
+      "domain": "three_d",
+      "scene_id": "room",
+      "task_id": "task_three_d__room__wall_object_camera_distance_label",
+      "seed": 4201
+    },
+    {
+      "domain": "three_d",
+      "scene_id": "carousel",
+      "task_id": "task_three_d__carousel__between_object_type_anchors_count",
+      "seed": 4202
+    }
+  ]
+}

@@ -33,6 +33,7 @@ checkpoints/
 external/
 
 *.ipynb
+!examples/notebooks/trace_quickstart.ipynb
 *.parquet
 *.sqlite
 *.sqlite3
