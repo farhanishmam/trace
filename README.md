@@ -14,8 +14,8 @@ points**, respectively. [See the transfer results](#external-benchmark-transfer)
 <p align="center">
   <a href="https://huggingface.co/spaces/maveryn/trace"><img alt="Live Demo" src="https://img.shields.io/badge/HuggingFace-Live_Demo-2563eb?style=for-the-badge"></a>
   <a href="https://arxiv.org/abs/2607.19790"><img alt="Paper" src="https://img.shields.io/badge/arXiv-Paper-b31b1b?style=for-the-badge"></a>
+  <a href="https://huggingface.co/collections/maveryn/trace-6a604291b4be4ed6399b9f24"><img alt="Hugging Face Collection" src="https://img.shields.io/badge/HuggingFace-Collection-f59e0b?style=for-the-badge"></a>
   <a href="https://huggingface.co/datasets/maveryn/trace"><img alt="Dataset" src="https://img.shields.io/badge/HuggingFace-Dataset-f59e0b?style=for-the-badge"></a>
-  <a href="https://github.com/maveryn/trace/blob/main/docs/research/REPRODUCING_RESULTS.md"><img alt="Reproduce" src="https://img.shields.io/badge/Results-Reproduce-159b91?style=for-the-badge"></a>
 </p>
 
 ![Trace examples across charts, games, geometry, graphs, icons, illustrations, pages, physics, puzzles, symbolic reasoning, and 3D scenes](docs/assets/paper-domain-montage/trace-paper-domain-montage.png)
@@ -70,19 +70,6 @@ aligned. Each finalized record contains the rendered problem, exact scoring
 contract, image-space annotation, and an execution-trace reference for
 inspection and replay.
 
-## TRACE Validation
-
-On 2,000 previously unseen instances generated from the same 1,000 task
-programs, TRACE training improves accuracy at both model scales.
-
-| Model scale | Base | TRACE | Change |
-| --- | ---: | ---: | ---: |
-| Qwen2.5-VL-3B | 24.45 | 41.05 | +16.60 |
-| Qwen2.5-VL-7B | 34.25 | 51.55 | +17.30 |
-
-These results measure new realizations within the TRACE task distributions;
-the evaluation below measures transfer to external benchmarks.
-
 ## External Benchmark Transfer
 
 Qwen2.5-VL models trained on 64,000 Trace instances improve the unweighted
@@ -95,6 +82,9 @@ macro-average across 24 external benchmarks at both evaluated model scales.
 
 Values are mean ± sample standard deviation across decoding seeds 42, 43, and
 44. Paired changes compare matched benchmark and seed results.
+
+On 2,000 unseen TRACE instances, accuracy improves from 24.45 to 41.05 at 3B
+and from 34.25 to 51.55 at 7B.
 
 ### Base versus TRACE by benchmark
 
@@ -202,30 +192,12 @@ for training, evaluation, progress reporting, and validation.
 ```bash
 git clone https://github.com/maveryn/trace.git
 cd trace
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -e ".[test]"
+python -m pip install -e .
 ```
 
-Trace supports Python 3.10 through 3.14. Use the reproducibility constraints on
-Python 3.10-3.12 when generating datasets or documentation assets:
-
-```bash
-python -m pip install -c constraints/release.txt -e ".[test]"
-```
-
-For Python 3.14 package and CLI development, use:
-
-```bash
-python -m pip install -c constraints/compat-py314.txt -e ".[test]"
-```
-
-Install Parquet and Hugging Face export support with:
-
-```bash
-python -m pip install -e ".[test,export]"
-```
+See the [installation documentation](docs/QUICKSTART.md#install) for
+reproducibility constraints, export dependencies, and Python 3.14
+compatibility.
 
 ## Generate
 

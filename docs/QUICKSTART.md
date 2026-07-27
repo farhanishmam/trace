@@ -2,13 +2,34 @@
 
 ## Install
 
-From a clone of the repository:
+For a standard installation from a clone:
+
+```bash
+git clone https://github.com/maveryn/trace.git
+cd trace
+python -m pip install -e .
+```
+
+For development and reproducible generation on Python 3.10-3.12, create and
+activate a virtual environment, then install the release constraints:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -e ".[test]"
+python -m pip install -c constraints/release.txt -e ".[test]"
+```
+
+Use the compatibility constraints for package and CLI development on Python
+3.14:
+
+```bash
+python -m pip install -c constraints/compat-py314.txt -e ".[test]"
+```
+
+Install Parquet and Hugging Face export support with:
+
+```bash
+python -m pip install -e ".[export]"
 ```
 
 ## Inspect The Registry
