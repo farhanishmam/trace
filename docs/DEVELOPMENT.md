@@ -102,8 +102,8 @@ Detailed source ownership and code-review rules are in
 
 Install the optional review dependencies with `.[review]`, then materialize a
 domain, scene, or task slice from the checked-in recipe into `review/`. Run
-`trace-review verify` and `trace-review audit` before inspecting the slice with
-`trace-review serve`.
+`trace-review verify`, `trace-review audit`, and the per-query `trace-review
+distribution` gate before inspecting the slice with `trace-review serve`.
 
 The canonical recipe contains 25 query-stratified requests per public task. It
 is source-controlled; generated images, sidecars, workbooks, feedback SQLite

@@ -1,6 +1,12 @@
 """Public contributor-review recipe, replay, audit, and application APIs."""
 
 from .audits import audit_generated_output, audit_materialized, audit_recipe
+from .distribution import (
+    ANSWER_DISTRIBUTION_SCHEMA_VERSION,
+    audit_materialized_answer_distributions,
+    evaluate_answer_distribution,
+    write_task_distribution_reports,
+)
 from .materialize import (
     iter_materialized_records,
     materialize_recipe,
@@ -36,6 +42,7 @@ from .recipe import capture_recipe, iter_recipe_requests, load_recipe
 
 __all__ = [
     "ARTIFACT_SCHEMA_VERSION",
+    "ANSWER_DISTRIBUTION_SCHEMA_VERSION",
     "MATERIALIZATION_SCHEMA_VERSION",
     "RECIPE_ID",
     "RECIPE_SCHEMA_VERSION",
@@ -59,13 +66,16 @@ __all__ = [
     "VerificationReport",
     "audit_generated_output",
     "audit_materialized",
+    "audit_materialized_answer_distributions",
     "audit_recipe",
     "capture_recipe",
     "collect_review_provenance",
+    "evaluate_answer_distribution",
     "iter_materialized_records",
     "iter_recipe_requests",
     "load_recipe",
     "materialize_recipe",
     "verify_materialized",
     "verify_recipe",
+    "write_task_distribution_reports",
 ]

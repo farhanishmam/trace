@@ -22,6 +22,13 @@ Changes to generation or validation infrastructure should check deterministic
 replay, trace references, image hashes, typed answers and annotations, prompt
 provenance, reward contracts, and strict-reproduction behavior.
 
+For a new task or a change to task/query sampling, materialize a representative
+focused review recipe and run `trace-review distribution` over the affected
+slice. Treat its per-query anti-degeneracy result as the gate; the overall task
+summary is diagnostic only. See
+[`docs/review/REVIEW_RECIPE.md`](../review/REVIEW_RECIPE.md#answer-distribution-audit)
+for sample-density and review-file guidance.
+
 ## Completeness Authority
 
 For a canonical dataset directory, `trace-validate` treats

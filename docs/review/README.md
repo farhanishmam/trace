@@ -13,10 +13,12 @@ workbooks, endpoint responses, and feedback databases stay under the ignored
 4. [Review rendering](RENDERER_REVIEW.md).
 5. [Review reusable assets](REUSABLE_ASSET_REVIEW.md) when shared visual
    resources changed.
-6. [Review the domain as a coherent surface](DOMAIN_QUALITY_REVIEW.md).
-7. Use the [local review application](../workflows/TASK_REVIEW_WEB_APP.md) to
+6. Run the per-query answer-distribution audit described in the
+   [review recipe workflow](REVIEW_RECIPE.md#answer-distribution-audit).
+7. [Review the domain as a coherent surface](DOMAIN_QUALITY_REVIEW.md).
+8. Use the [local review application](../workflows/TASK_REVIEW_WEB_APP.md) to
    record issues and export a report.
-8. Optionally run [portable endpoint calibration](../workflows/CALIBRATION_GUIDE.md)
+9. Optionally run [portable endpoint calibration](../workflows/CALIBRATION_GUIDE.md)
    as an informational model probe.
 
 The normative answer, annotation, verifier, prompt, taxonomy, and source-layout

@@ -186,6 +186,30 @@ def _audit(args: argparse.Namespace, _parser: argparse.ArgumentParser) -> int:
     return 0 if passed else 1
 
 
+def _distribution(args: argparse.Namespace, _parser: argparse.ArgumentParser) -> int:
+    from .review.distribution import (
+        audit_materialized_answer_distributions,
+        write_task_distribution_reports,
+    )
+
+    review_root = Path(args.review_root)
+    result = audit_materialized_answer_distributions(
+        review_root,
+        task_ids=args.task or None,
+        domains=args.domain or None,
+        scene_ids=args.scene or None,
+        query_ids=args.query or None,
+        min_unique_answers=int(args.min_unique_answers),
+        max_answer_frequency=float(args.max_answer_frequency),
+    )
+    if args.write_task_files:
+        result["written_task_files"] = write_task_distribution_reports(
+            review_root, result
+        )
+    _print_json(result)
+    return 0 if _report_ok(result) or bool(args.allow_fail) else 1
+
+
 def _serve(args: argparse.Namespace, _parser: argparse.ArgumentParser) -> int:
     from .review.app import serve_review_app
 
@@ -301,6 +325,37 @@ def _build_parser() -> argparse.ArgumentParser:
         "--query", action="append", default=[], help="Query id; repeatable"
     )
     audit.set_defaults(handler=_audit)
+
+    distribution = commands.add_parser(
+        "distribution",
+        help="Audit per-query answer diversity in materialized artifacts",
+    )
+    distribution.add_argument(
+        "--review-root",
+        "--root",
+        dest="review_root",
+        type=Path,
+        default=Path("review/task-reviews"),
+    )
+    _selection_arguments(distribution, allow_all=False)
+    distribution.add_argument(
+        "--query", action="append", default=[], help="Query id; repeatable"
+    )
+    distribution.add_argument("--min-unique-answers", type=int, default=4)
+    distribution.add_argument(
+        "--max-answer-frequency", type=float, default=1.0 / 3.0
+    )
+    distribution.add_argument(
+        "--write-task-files",
+        action="store_true",
+        help="Write recipe-bound diagnostics for the local review app",
+    )
+    distribution.add_argument(
+        "--allow-fail",
+        action="store_true",
+        help="Exit successfully even when anti-degeneracy checks fail",
+    )
+    distribution.set_defaults(handler=_distribution)
 
     serve = commands.add_parser("serve", help="Run the local contributor review app")
     serve.add_argument(

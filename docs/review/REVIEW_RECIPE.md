@@ -138,6 +138,10 @@ trace-review audit \
   --recipe <recipe-root> \
   --scene <domain>/<scene_id> \
   --output review/task-reviews
+trace-review distribution \
+  --review-root review/task-reviews \
+  --scene <domain>/<scene_id> \
+  --write-task-files
 ```
 
 Capture and materialization filters select whole tasks by domain, scene, or
@@ -149,6 +153,31 @@ offline curation gate rather than routine CI. Replay resumes verified task
 directories and refuses to overwrite artifacts from another recipe. Move or
 remove the old ignored output directory explicitly before materializing a
 replacement.
+
+## Answer-distribution audit
+
+`trace-review distribution` applies the public lightweight anti-degeneracy
+checks to typed answers already present in the materialized slice. It reports
+each task/query separately: at least four unique answers, capped by the number
+of available samples, and a strict maximum single-answer frequency below one
+third. Numeric answers also receive an informational five-bin summary; bin
+skew does not itself fail the audit. The command exits nonzero when any selected
+query fails. Use `--allow-fail` only when collecting diagnostics, not to claim
+the gate passed.
+
+The canonical 25-row recipe is designed for broad visual review and can leave
+high-query-count tasks with too few rows for meaningful frequency estimates.
+For a distribution-sensitive task change, capture and materialize a focused
+draft with enough requests that every query has a representative sample, then
+run the audit on that draft. Record the per-query counts with the review
+evidence; do not interpret a combined task-level distribution as a substitute
+for the per-query checks.
+
+`--write-task-files` writes `answer_distribution.json` beside each selected
+materialized task so the local review app can display the result. Each file is
+bound to the task and recipe digest and is rejected after materialization is
+replaced. These diagnostics remain under the ignored `review/` workspace and
+must not be committed.
 
 ## Intentional semantic changes
 

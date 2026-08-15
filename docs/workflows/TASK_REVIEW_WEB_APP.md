@@ -12,6 +12,10 @@ trace-review materialize \
   --recipe docs/review/recipes/trace-review-recipe-v1 \
   --task <task_id> \
   --output review/task-reviews
+trace-review distribution \
+  --review-root review/task-reviews \
+  --task <task_id> \
+  --write-task-files
 trace-review serve --review-root review/task-reviews
 ```
 
@@ -27,6 +31,11 @@ answers, annotation overlays, sanitized trace/verifier summaries, provenance,
 and any contributor-supplied distribution diagnostics. Separate resource
 pages cover public illustration objects and 3D object profiles; font and icon
 legibility is reviewed through the task images that use them.
+
+Distribution diagnostics produced by `trace-review distribution
+--write-task-files` are bound to the materialized recipe digest. The index
+rejects stale diagnostics from another recipe instead of presenting them with
+the current samples.
 
 Use issue fields for prompt, rendering, answer, annotation, verifier/trace,
 distribution, code/docs, or taxonomy findings. Keep sample-specific issues on

@@ -529,7 +529,16 @@ def _load_distribution(
             continue
         if not _contained_regular_file(root, path):
             raise ValueError(f"{name} is not a contained regular file")
-        return _load_json_object(path)
+        payload = _load_json_object(path)
+        recipe_digest = payload.get("recipe_digest")
+        if recipe_digest is not None and recipe_digest != manifest.get(
+            "recipe_digest"
+        ):
+            raise ValueError(f"{name} recipe_digest does not match manifest")
+        task_id = payload.get("task_id")
+        if task_id is not None and task_id != manifest.get("task_id"):
+            raise ValueError(f"{name} task_id does not match manifest")
+        return payload
     value = manifest.get("distribution_summary", manifest.get("distribution"))
     return dict(value) if isinstance(value, Mapping) else {}
 

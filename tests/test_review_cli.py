@@ -49,6 +49,23 @@ def test_review_cli_exposes_portable_recipe_and_calibration_controls() -> None:
     )
     assert audit.task == ["task_symbolic__abacus__displayed_value_readout"]
 
+    distribution = parser.parse_args(
+        [
+            "distribution",
+            "--root",
+            "review/task-reviews",
+            "--scene",
+            "symbolic/abacus",
+            "--query",
+            "displayed_value",
+            "--write-task-files",
+        ]
+    )
+    assert distribution.scene == ["symbolic/abacus"]
+    assert distribution.query == ["displayed_value"]
+    assert distribution.write_task_files is True
+    assert distribution.min_unique_answers == 4
+
     serve = parser.parse_args(
         [
             "serve",
@@ -107,3 +124,16 @@ def test_verify_cli_serializes_computed_report_fields_and_fails(
     assert payload["ok"] is False
     assert payload["error_count"] == 1
     assert payload["checked_requests"] == 1
+
+
+def test_distribution_cli_fails_checks_unless_explicitly_allowed(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        "trace_tasks.review.distribution.audit_materialized_answer_distributions",
+        lambda *args, **kwargs: {"passed": False, "tasks": []},
+    )
+    args = ["distribution", "--root", "unused-for-mocked-test"]
+    assert main(args) == 1
+    assert json.loads(capsys.readouterr().out)["passed"] is False
+    assert main([*args, "--allow-fail"]) == 0

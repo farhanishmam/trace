@@ -555,6 +555,36 @@ def test_sample_identity_changes_with_recipe_identity(tmp_path: Path) -> None:
     assert first_uid != second_uid
 
 
+def test_index_rejects_distribution_diagnostics_from_another_recipe(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "task-reviews"
+    task_id, domain, scene_id = _materialize_one(root)
+    distribution_path = (
+        root / domain / scene_id / task_id / "answer_distribution.json"
+    )
+    distribution_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "trace-answer-distribution-v1",
+                "recipe_digest": _DIGEST_A,
+                "task_id": task_id,
+                "pass": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    accepted = build_review_index(root)
+    assert accepted.tasks[task_id].distribution["pass"] is True
+
+    payload = json.loads(distribution_path.read_text(encoding="utf-8"))
+    payload["recipe_digest"] = _DIGEST_B
+    distribution_path.write_text(json.dumps(payload), encoding="utf-8")
+    rejected = build_review_index(root)
+    assert not rejected.tasks[task_id].materialized
+    assert any("recipe_digest" in error for error in rejected.errors)
+
+
 def test_host_and_same_origin_checks_protect_local_state(tmp_path: Path) -> None:
     root = tmp_path / "task-reviews"
     task_id, _, _ = _materialize_one(root)

@@ -93,11 +93,13 @@ All active task work uses the current source layout described in
    source-bound recipe capture and loading.
 2. `src/trace_tasks/review/materialize.py` and `audits.py` — task-atomic local
    replay, semantic verification, and focused offline audits.
-3. `src/trace_tasks/review/app/` — optional local-only browsing and feedback
+3. `src/trace_tasks/review/distribution.py` — recipe-bound per-task/query answer
+   anti-degeneracy checks over materialized review artifacts.
+4. `src/trace_tasks/review/app/` — optional local-only browsing and feedback
    state with protected, contained media access.
-4. `src/trace_tasks/review/calibration.py` — optional typed-answer probes against
+5. `src/trace_tasks/review/calibration.py` — optional typed-answer probes against
    caller-managed OpenAI-compatible endpoints; never an approval gate.
-5. `src/trace_tasks/review/export.py` — portable exports of local review state.
+6. `src/trace_tasks/review/export.py` — portable exports of local review state.
 
 ## 4) Active Task Inventory
 The active public task surface is generated from the live registry and
