@@ -1,0 +1,67 @@
+# Evaluation conditions. Every condition inherits `defaults` and overrides keys.
+# Paths are relative to the repository root.
+#
+#   tools                tool names or groups (zoom, visual_ops, calculator, ocr, all)
+#   system_prompt_files  concatenated with "\n\n"; the tool block is appended after them
+#   max_turns            max assistant turns (LLM calls) per episode
+#   max_tokens_per_turn  max_tokens of each call
+#   max_total_tokens     cap on generated tokens summed over turns
+#   max_calls_per_turn   tool calls executed per assistant turn (extra calls get an error)
+#   min_pixels/max_pixels  bounds for the image the model sees (tools always read full res)
+#   oracle_crop          also show a crop of the ground-truth annotation region (diagnostic)
+
+defaults:
+  system_prompt_files: [prompts/trace_system_prompt.txt]
+  tools: []
+  decoding: trace
+  max_turns: 6
+  max_tokens_per_turn: 2048
+  max_total_tokens: 8192
+  max_calls_per_turn: 2
+  min_pixels: 262144
+  max_pixels: 4194304
+  oracle_crop: false
+
+conditions:
+  # --- core comparison -------------------------------------------------------
+  # TRACE validation protocol exactly: one turn, 2048 tokens.
+  no_tool:
+    max_turns: 1
+    max_total_tokens: 2048
+  # Same, with the tool conditions' total token budget (controls for "more tokens").
+  no_tool_budget:
+    max_turns: 1
+    max_tokens_per_turn: 8192
+  # ZwZ "Qwen3-VL with official tool use" baseline.
+  zoom:
+    tools: [zoom]
+  # Zoom + the ZwZ Table 9 operations we implement (rotate, flip, draw).
+  visual_ops:
+    tools: [visual_ops]
+  calculator:
+    tools: [calculator]
+  ocr:
+    tools: [ocr]
+  all:
+    tools: [all]
+
+  # --- diagnostics -------------------------------------------------------------
+  # Zoom with the cookbook's "research assistant" system prompt prepended.
+  zoom_cookbook:
+    tools: [zoom]
+    system_prompt_files: [prompts/qwen3vl_cookbook_analysis_prompt.txt, prompts/trace_system_prompt.txt]
+  # Upper bound for perfect localisation (uses ground-truth annotations; not a deployable method).
+  oracle_crop:
+    max_turns: 1
+    max_total_tokens: 2048
+    oracle_crop: true
+  # ZwZ fn. 1: zoom adds information only when the input was downsampled. ~0.4 MP view, full-res tools.
+  no_tool_lowres:
+    max_turns: 1
+    max_total_tokens: 2048
+    min_pixels: 65536
+    max_pixels: 401408
+  zoom_lowres:
+    tools: [zoom]
+    min_pixels: 65536
+    max_pixels: 401408
