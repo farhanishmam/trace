@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 # 20 rows x every condition against a running endpoint, then score. ~5 min on one GPU.
 #
-#   MODEL=Qwen/Qwen3-VL-8B-Instruct scripts/smoke_test.sh [extra trace-tool-eval flags]
+#   MODEL=Qwen/Qwen2.5-VL-7B-Instruct scripts/smoke_test.sh [extra trace-tool-eval flags]
 #
 # DATASET_PATH=/path/to/validation.parquet uses a local copy instead of the Hub.
 set -euo pipefail
 
-MODEL=${MODEL:-Qwen/Qwen3-VL-8B-Instruct}
-SERVED=${SERVED:-$(basename "$MODEL" | tr '[:upper:]' '[:lower:]')}
+source "$(dirname "$0")/_model_env.sh"
 ENDPOINT=${ENDPOINT:-http://127.0.0.1:18100/v1}
 OUT=${OUT:-runs/smoke/$SERVED}
 CONDITIONS=${CONDITIONS:-no_tool,no_tool_budget,zoom,visual_ops,calculator,ocr,all,zoom_cookbook,oracle_crop,no_tool_lowres,zoom_lowres}
 DATA=()
 if [ -n "${DATASET_PATH:-}" ]; then DATA=(--dataset-path "$DATASET_PATH"); fi
+REV=()
+if [ -n "$REVISION" ]; then REV=(--model-revision "$REVISION"); fi
 
-trace-tool-eval --endpoint "$ENDPOINT" --model "$SERVED" --model-id "$MODEL" --conditions "$CONDITIONS" \
+trace-tool-eval --endpoint "$ENDPOINT" --model "$SERVED" --model-id "$MODEL" ${REV[@]+"${REV[@]}"} --conditions "$CONDITIONS" \
   --seeds 42 --per-task 1 --limit 20 --concurrency 20 --out "$OUT" ${DATA[@]+"${DATA[@]}"} "$@"
 trace-tool-score "$OUT" --report "$OUT/report.md" ${DATA[@]+"${DATA[@]}"}
 

@@ -38,6 +38,13 @@ def final_assistant_segment(solution_str: str, num_turns: int | None = None) -> 
     if num_turns is not None and num_turns <= 2:
         return solution_str.replace("<|im_end|>", "").strip()
     boundaries = list(_TURN_BOUNDARY_RE.finditer(solution_str))
+    if num_turns is not None and num_turns > 2 and not boundaries:
+        # e.g. a Qwen2.5-VL policy without the tool chat template (rl/prepare_policy.py):
+        # scoring the whole rollout would credit answers from earlier turns
+        raise ValueError(
+            f"multi-turn rollout (num_turns={num_turns}) has no <tool_response> turn boundary; "
+            "check the policy's chat template"
+        )
     tail = solution_str[boundaries[-1].end() :] if boundaries else solution_str
     return tail.replace("<|im_end|>", "").strip()
 

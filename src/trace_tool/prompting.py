@@ -1,12 +1,13 @@
-"""Message construction that renders exactly like Qwen3-VL's native tool template.
+"""Tool prompts in Qwen-Agent's Nous format, for Qwen2.5-VL and Qwen3-VL.
 
 We do not send ``tools=`` to the server (that would need vLLM's tool parser and
 image support in ``role: tool`` messages). Instead, like Qwen-Agent's
 ``NousFnCallPrompt``, the tool block is appended to the system message and tool
 results are sent as user messages wrapped in ``<tool_response>`` tags. With the
 Qwen3-VL chat template this renders to the same string as the native
-``tools=`` + ``role: tool`` path; tests/test_prompting.py checks that by
-rendering both through the checkpoint's Jinja template.
+``tools=`` + ``role: tool`` path (tests/test_prompting.py). Qwen2.5-VL's
+template has no tool path; this is the layout Qwen-Agent prompts it with
+(tests/test_qwen25.py, checked against the real tokenizers).
 """
 
 from __future__ import annotations

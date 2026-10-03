@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "trace-tool"
 version = "0.1.0"
-description = "Tool-calling experiments (zoom-in, image ops, calculator, OCR) for Qwen3-VL on TRACE"
+description = "Tool-calling experiments (zoom-in, image ops, calculator, OCR) for Qwen2.5-VL (and Qwen3-VL) on TRACE"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -6,6 +6,7 @@ from trace_tool.agent import Completion, EpisodeConfig, annotation_region, oracl
 from trace_tool.conditions import build_episode_config, load_conditions, read_system_prompt
 from trace_tool.scoring import score_row
 from trace_tool.tools import build_tools
+from trace_tool.models import QWEN3_VL, QWEN25_VL
 
 from .conftest import make_image, make_row
 
@@ -31,7 +32,7 @@ def _run(row, cfg, backend):
 
 
 def test_zoom_then_calculator_then_answer(row):
-    cfg = EpisodeConfig(system_prompt=read_system_prompt(["prompts/trace_system_prompt.txt"]), tools=build_tools(["zoom", "calculator"]))
+    cfg = EpisodeConfig(family=QWEN3_VL, system_prompt=read_system_prompt(["prompts/trace_system_prompt.txt"]), tools=build_tools(["zoom", "calculator"], QWEN3_VL))
     backend = ScriptedBackend([ZOOM_CALL, "Two shapes.\n" + CALC_CALL, 'So 3.\n{"answer": 3}'])
     record = _run(row, cfg, backend)
 
@@ -59,7 +60,7 @@ def test_zoom_then_calculator_then_answer(row):
 
 def test_no_tool_condition_is_single_turn(row):
     spec = load_conditions()["no_tool"]
-    cfg = build_episode_config(spec, seed=42)
+    cfg = build_episode_config(spec, seed=42, family=QWEN3_VL)
     backend = ScriptedBackend([ZOOM_CALL])  # tool-looking text is not executed without tools
     record = _run(row, cfg, backend)
     assert record["turns"] == 1 and record["n_tool_calls"] == 0
@@ -70,7 +71,7 @@ def test_no_tool_condition_is_single_turn(row):
 
 
 def test_turn_limit_and_budget(row):
-    cfg = EpisodeConfig(system_prompt="s", tools=build_tools(["calculator"]), max_turns=3, max_total_tokens=1000)
+    cfg = EpisodeConfig(family=QWEN3_VL, system_prompt="s", tools=build_tools(["calculator"], QWEN3_VL), max_turns=3, max_total_tokens=1000)
     backend = ScriptedBackend([CALC_CALL] * 3)
     record = _run(row, cfg, backend)
     assert record["stop_reason"] == "max_turns" and record["turns"] == 3 and record["n_tool_calls"] == 3
@@ -78,7 +79,7 @@ def test_turn_limit_and_budget(row):
     assert [c["executed"] for c in record["tool_calls"]] == [True, True, False]
     assert record["tool_calls"][-1]["skipped"] == "max_turns"
 
-    cfg = EpisodeConfig(system_prompt="s", tools=build_tools(["calculator"]), max_turns=10, max_total_tokens=120, max_tokens_per_turn=100)
+    cfg = EpisodeConfig(family=QWEN3_VL, system_prompt="s", tools=build_tools(["calculator"], QWEN3_VL), max_turns=10, max_total_tokens=120, max_tokens_per_turn=100)
     backend = ScriptedBackend([CALC_CALL] * 10)
     record = _run(row, cfg, backend)
     assert record["stop_reason"] == "token_budget"
@@ -86,7 +87,7 @@ def test_turn_limit_and_budget(row):
 
 
 def test_errors_are_returned_to_model(row):
-    cfg = EpisodeConfig(system_prompt="s", tools=build_tools(["calculator"]), max_calls_per_turn=1)
+    cfg = EpisodeConfig(family=QWEN3_VL, system_prompt="s", tools=build_tools(["calculator"], QWEN3_VL), max_calls_per_turn=1)
     bad = '<tool_call>\n{"name": "nope", "arguments": {}}\n</tool_call>\n' + CALC_CALL
     backend = ScriptedBackend([bad, '{"answer": 3}'])
     record = _run(row, cfg, backend)
@@ -100,32 +101,32 @@ def test_endpoint_error_is_recorded(row):
         async def complete(self, *a, **k):
             raise RuntimeError("boom")
 
-    record = _run(row, EpisodeConfig(system_prompt="s"), Failing())
+    record = _run(row, EpisodeConfig(family=QWEN3_VL, system_prompt="s"), Failing())
     assert record["stop_reason"] == "error" and "boom" in record["error"]
 
 
 def test_oracle_crop_and_lowres(row):
     assert annotation_region(row.annotation_gt) == [50, 50, 460, 310]
     assert annotation_region({"type": "point_map", "value": {"a": [10, 20], "b": [30, 5]}}) == [10, 5, 30, 20]
-    assert oracle_crop_image(make_image(), {"type": "point", "value": [300, 200]}) is not None
+    assert oracle_crop_image(make_image(), {"type": "point", "value": [300, 200]}, QWEN3_VL) is not None
 
     spec = load_conditions()["oracle_crop"]
     backend = ScriptedBackend(['{"answer": 3}'])
-    record = _run(row, build_episode_config(spec, seed=1), backend)
+    record = _run(row, build_episode_config(spec, seed=1, family=QWEN3_VL), backend)
     content = backend.requests[0]["messages"][1]["content"]
     assert [p["type"] for p in content] == ["image_url", "image_url", "text"]
     assert record["n_images"] == 2
 
     big = make_row(image=make_image(1600, 1200))
     spec = load_conditions()["no_tool_lowres"]
-    record = _run(big, build_episode_config(spec, seed=1), ScriptedBackend(['{"answer": 3}']))
+    record = _run(big, build_episode_config(spec, seed=1, family=QWEN3_VL), ScriptedBackend(['{"answer": 3}']))
     w, h = record["shown_image_size"]
     assert w * h <= 401408 and w % 32 == 0 and h % 32 == 0
 
 
 def test_all_conditions_build():
     for name, spec in load_conditions().items():
-        cfg = build_episode_config(spec, seed=0)
+        cfg = build_episode_config(spec, seed=0, family=QWEN3_VL)
         assert cfg.max_turns >= 1, name
 
 
@@ -136,7 +137,7 @@ def test_rejected_request_is_terminal(row):
         async def complete(self, *a, **k):
             raise RequestRejected("maximum context length exceeded")
 
-    record = _run(row, EpisodeConfig(system_prompt="s"), Rejecting())
+    record = _run(row, EpisodeConfig(family=QWEN3_VL, system_prompt="s"), Rejecting())
     assert record["stop_reason"] == "rejected"
 
 
@@ -175,7 +176,7 @@ def test_tool_timeout_excludes_queue_time():
 
 
 def test_elongated_zoom_becomes_tool_error():
-    tool = build_tools(["zoom"])["image_zoom_in_tool"]
+    tool = build_tools(["zoom"], QWEN3_VL)["image_zoom_in_tool"]
     from trace_tool.tools.base import ToolContext
 
     result = tool({"bbox_2d": [0, 0, 1, 1000], "label": "x", "img_idx": 0}, ToolContext([make_image(800, 600)]))
@@ -187,7 +188,7 @@ def test_calls_in_a_turn_run_in_order_and_see_earlier_images(row):
         '<tool_call>\n{"name": "image_zoom_in_tool", "arguments": {"bbox_2d": [0, 0, 500, 500], "label": "a", "img_idx": 0}}\n</tool_call>\n'
         '<tool_call>\n{"name": "image_zoom_in_tool", "arguments": {"bbox_2d": [0, 0, 500, 500], "label": "b", "img_idx": 1}}\n</tool_call>'
     )
-    cfg = EpisodeConfig(system_prompt="s", tools=build_tools(["zoom"]))
+    cfg = EpisodeConfig(family=QWEN3_VL, system_prompt="s", tools=build_tools(["zoom"], QWEN3_VL))
     record = _run(row, cfg, ScriptedBackend([two_zooms, '{"answer": 3}']))
     assert [c["ok"] for c in record["tool_calls"]] == [True, True]  # call 2 zooms into call 1's output
     assert record["n_images"] == 3
@@ -196,7 +197,7 @@ def test_calls_in_a_turn_run_in_order_and_see_earlier_images(row):
 def test_zoom_validates_like_qwen_agent():
     from trace_tool.tools.base import ToolContext
 
-    tool = build_tools(["zoom"])["image_zoom_in_tool"]
+    tool = build_tools(["zoom"], QWEN3_VL)["image_zoom_in_tool"]
     ctx = ToolContext([make_image(800, 600), make_image(400, 300)])
     assert not tool({"bbox_2d": [0, 0, 500, 500], "label": "x"}, ctx).ok  # img_idx required
     assert not tool({"bbox_2d": [0, 0, 500, 500], "img_idx": 0}, ctx).ok  # label required
@@ -207,7 +208,7 @@ def test_zoom_validates_like_qwen_agent():
 
 def test_no_tool_text_is_scored_verbatim(row):
     text = 'Counting.\n<tool_response>\nnone\n</tool_response>\nSo three.\n{"answer": 3}'
-    record = _run(row, build_episode_config(load_conditions()["no_tool"], seed=1), ScriptedBackend([text]))
+    record = _run(row, build_episode_config(load_conditions()["no_tool"], seed=1, family=QWEN3_VL), ScriptedBackend([text]))
     assert record["final_response"] == text and record["hallucinated_tool_responses"] == 0
 
 

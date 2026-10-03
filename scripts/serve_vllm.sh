@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
-# Serve a Qwen3-VL checkpoint for trace-tool-eval.
+# Serve a Qwen-VL checkpoint (default: TRACE's Qwen2.5-VL-7B) for trace-tool-eval.
 #
-#   MODEL=Qwen/Qwen3-VL-8B-Instruct PORT=18100 scripts/serve_vllm.sh
+#   MODEL=Qwen/Qwen2.5-VL-7B-Instruct PORT=18100 scripts/serve_vllm.sh
 #
-# SERVED (the name clients use) defaults to the lowercased basename of MODEL,
-# e.g. qwen3-vl-8b-instruct; run_phase1.sh and smoke_test.sh derive it the same way.
+# MODEL / SERVED / REVISION come from scripts/_model_env.sh: SERVED defaults to
+# the lowercased basename of MODEL (qwen2.5-vl-7b-instruct) and REVISION to
+# TRACE's pinned revision for its models; run_phase1.sh and smoke_test.sh agree.
 # Images are resized client-side to the condition's pixel bounds (multiples of
-# 32), so the server's own resizing is a no-op. --generation-config vllm stops
+# 28 for Qwen2.5-VL, 32 for Qwen3-VL), so the server's own resizing is a no-op. --generation-config vllm stops
 # the checkpoint's generation_config.json (top_k=20 etc.) from overriding the
 # sampling parameters each request sends. --chat-template-content-format openai
 # keeps content lists intact so <tool_response> text and images render in order.
 # The image limit covers 1 input image + 5 tool rounds x 2 calls.
 set -euo pipefail
 
-MODEL=${MODEL:-Qwen/Qwen3-VL-8B-Instruct}
-SERVED=${SERVED:-$(basename "$MODEL" | tr '[:upper:]' '[:lower:]')}
+source "$(dirname "$0")/_model_env.sh"
 PORT=${PORT:-18100}
 TP=${TP:-1}
 DP=${DP:-1}
 MAX_LEN=${MAX_LEN:-32768}
 MAX_IMAGES=${MAX_IMAGES:-12}
 
-exec vllm serve "$MODEL" \
+exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   --served-model-name "$SERVED" \
   --host 127.0.0.1 --port "$PORT" \
   --tensor-parallel-size "$TP" \

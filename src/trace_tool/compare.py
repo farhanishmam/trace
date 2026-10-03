@@ -1,7 +1,7 @@
 """Paired comparison of conditions against a baseline on the same rows.
 
 Example:
-    trace-tool-compare runs/qwen3-vl-8b --baseline no_tool --out runs/qwen3-vl-8b/compare.md
+    trace-tool-compare runs/full/qwen2.5-vl-7b-instruct --baseline no_tool --out runs/full/qwen2.5-vl-7b-instruct/compare.md
 
 For each (model, seed) and condition C: accuracy delta vs the baseline on the
 intersection of scored rows, a paired bootstrap 95% CI, and an exact McNemar
@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -154,7 +155,11 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--out")
     args = p.parse_args(argv)
     only = [c.strip() for c in args.conditions.split(",") if c.strip()] if args.conditions else None
-    report = compare(load_scores(args.paths, args.metric), args.baseline, args.n_boot, only)
+    scores = load_scores(args.paths, args.metric)
+    missing = sorted(set(only or []) - {c for _, c, _ in scores})
+    if missing:
+        print(f"warning: --conditions lists {missing}, which have no scored runs; the Holm family is smaller", file=sys.stderr)
+    report = compare(scores, args.baseline, args.n_boot, only)
     if args.out:
         Path(args.out).write_text(report)
     print(report)

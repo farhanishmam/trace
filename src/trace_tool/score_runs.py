@@ -1,10 +1,10 @@
 """Score generated runs and write per-run summaries plus a cross-run report.
 
 Example:
-    trace-tool-score runs/qwen3-vl-8b --report runs/qwen3-vl-8b/report.md
-    trace-tool-judge --pending runs/qwen3-vl-8b/judge_pending.jsonl ...   # optional
-    trace-tool-score runs/qwen3-vl-8b --judge-results runs/qwen3-vl-8b/judge_results.jsonl \
-        --report runs/qwen3-vl-8b/report.md
+    trace-tool-score runs/full/qwen2.5-vl-7b-instruct --report runs/full/qwen2.5-vl-7b-instruct/report.md
+    trace-tool-judge --pending runs/full/qwen2.5-vl-7b-instruct/judge_pending.jsonl ...   # optional
+    trace-tool-score runs/full/qwen2.5-vl-7b-instruct --judge-results runs/full/qwen2.5-vl-7b-instruct/judge_results.jsonl \
+        --report runs/full/qwen2.5-vl-7b-instruct/report.md
 
 A run directory is any directory containing responses.jsonl + run_config.json
 (normally <out>/<condition>/seed<seed>).

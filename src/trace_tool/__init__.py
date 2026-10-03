@@ -1,3 +1,3 @@
-"""Tool-calling experiments for Qwen3-VL on the TRACE visual-reasoning dataset."""
+"""Tool-calling experiments for Qwen2.5-VL (TRACE's base models; Qwen3-VL also supported) on TRACE."""
 
 __version__ = "0.1.0"

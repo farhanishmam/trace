@@ -36,8 +36,9 @@ from .prompting import (
     tool_response_content,
     user_prompt_content,
 )
+from .models import ModelFamily
 from .tools.base import Tool, ToolContext, ToolResult, fit_image
-from .tools.zoom import zoom_crop
+from .tools.zoom import zoom_crop_pixels
 
 DECODING_PRESETS: dict[str, dict[str, float]] = {
     # TRACE validation suite (rlvr/evaluation/trace_validation/suite.v1.json).
@@ -51,6 +52,7 @@ DECODING_PRESETS: dict[str, dict[str, float]] = {
 @dataclass
 class EpisodeConfig:
     system_prompt: str
+    family: ModelFamily  # patch grid and coordinate frame (trace_tool.models)
     tools: dict[str, Tool] = field(default_factory=dict)
     max_turns: int = 6
     max_tokens_per_turn: int = 2048
@@ -153,7 +155,9 @@ def annotation_region(annotation_gt: dict[str, Any]) -> list[float] | None:
     return [min(xs), min(ys), max(xs), max(ys)]
 
 
-def oracle_crop_image(image: Image.Image, annotation_gt: dict[str, Any], pad_frac: float = 0.1, min_side: int = 64) -> Image.Image | None:
+def oracle_crop_image(
+    image: Image.Image, annotation_gt: dict[str, Any], family: ModelFamily, pad_frac: float = 0.1, min_side: int = 64
+) -> Image.Image | None:
     region = annotation_region(annotation_gt)
     if region is None:
         return None
@@ -162,8 +166,7 @@ def oracle_crop_image(image: Image.Image, annotation_gt: dict[str, Any], pad_fra
     pad_x = max(pad_frac * width, (min_side - (x2 - x1)) / 2, 0)
     pad_y = max(pad_frac * height, (min_side - (y2 - y1)) / 2, 0)
     box = [max(0, x1 - pad_x), max(0, y1 - pad_y), min(width, x2 + pad_x), min(height, y2 + pad_y)]
-    rel = [box[0] / width * 1000, box[1] / height * 1000, box[2] / width * 1000, box[3] / height * 1000]
-    crop, _ = zoom_crop(image, rel)
+    crop, _ = zoom_crop_pixels(image, box, factor=family.patch_factor, min_side=family.zoom_min_side)
     return crop
 
 
@@ -278,11 +281,13 @@ async def _execute(call: ParsedCall, tools: dict[str, Tool], ctx: ToolContext, p
 def build_initial_messages(row: TraceRow, cfg: EpisodeConfig) -> tuple[list[dict[str, Any]], ToolContext, list[Image.Image]]:
     """System + first user turn exactly as sent (used by run_episode and --dry-run)."""
     full_images = row.images()
-    ctx = ToolContext(full_images)
-    shown = [fit_image(img, min_pixels=cfg.min_pixels, max_pixels=cfg.max_pixels) for img in full_images]
+    factor = cfg.family.patch_factor
+    shown = [fit_image(img, min_pixels=cfg.min_pixels, max_pixels=cfg.max_pixels, factor=factor) for img in full_images]
+    # tools read the full-resolution images; model coordinates refer to the shown sizes
+    ctx = ToolContext(full_images, shown_sizes=[img.size for img in shown])
     content = user_prompt_content(row.prompt, [(img, i) for i, img in enumerate(shown)])
     if cfg.oracle_crop:
-        crop = oracle_crop_image(full_images[0], row.annotation_gt)
+        crop = oracle_crop_image(full_images[0], row.annotation_gt, cfg.family)
         if crop is not None:
             (crop_index,) = ctx.add_images([crop])
             lead = [p for p in content if p["type"] == "image"]

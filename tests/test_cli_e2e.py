@@ -86,7 +86,7 @@ def test_pipeline(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data)
     out = tmp_path / "runs"
-    common = ["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(out), "--concurrency", "4"]
+    common = ["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(out), "--concurrency", "4"]
     run_eval.main(common + ["--conditions", "no_tool,zoom", "--seeds", "42,43"])
 
     zoom_lines = (out / "zoom" / "seed42" / "responses.jsonl").read_text().splitlines()
@@ -117,7 +117,7 @@ def test_pipeline(tmp_path, endpoint):
 def test_dry_run_prints_prompt(tmp_path, capsys):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
-    run_eval.main(["--model", "fake", "--dataset-path", str(data), "--out", str(tmp_path), "--conditions", "all", "--dry-run"])
+    run_eval.main(["--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(tmp_path), "--conditions", "all", "--dry-run"])
     printed = capsys.readouterr().out
     assert '"name": "image_zoom_in_tool"' in printed and '"name": "ocr"' in printed and "<image 0>" in printed
 
@@ -126,7 +126,7 @@ def test_torn_write_and_endpoint_errors(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data)
     out = tmp_path / "runs"
-    common = ["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
+    common = ["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
     run_eval.main(common + ["--limit", "4"])
     path = out / "no_tool" / "seed42" / "responses.jsonl"
     lines = path.read_text().splitlines()
@@ -153,7 +153,7 @@ def test_success_then_error_record_keeps_success(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
     out = tmp_path / "runs"
-    common = ["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
+    common = ["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
     run_eval.main(common)
     path = out / "no_tool" / "seed42" / "responses.jsonl"
     first = json.loads(path.read_text().splitlines()[0])
@@ -167,7 +167,7 @@ def test_resume_rejects_different_model_id_and_bad_domains(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
     out = tmp_path / "runs"
-    common = ["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
+    common = ["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(out), "--conditions", "no_tool"]
     run_eval.main(common + ["--model-id", "org/model-8b"])
     with pytest.raises(SystemExit):
         run_eval.main(common + ["--model-id", "org/model-4b"])
@@ -179,7 +179,7 @@ def test_compare_refuses_duplicate_runs(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
     for root in ("a", "b"):
-        run_eval.main(["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(tmp_path / root), "--conditions", "no_tool"])
+        run_eval.main(["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(tmp_path / root), "--conditions", "no_tool"])
     score_runs.main([str(tmp_path / "a"), str(tmp_path / "b"), "--dataset-path", str(data), "--pending-out", str(tmp_path / "p.jsonl")])
     with pytest.raises(SystemExit):
         compare.main([str(tmp_path)])
@@ -221,14 +221,14 @@ def test_broken_ocr_stops_before_any_request(tmp_path, endpoint, monkeypatch):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
     with pytest.raises(SystemExit, match="libGL"):
-        run_eval.main(["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(tmp_path / "runs"), "--conditions", "no_tool,ocr"])
+        run_eval.main(["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(tmp_path / "runs"), "--conditions", "no_tool,ocr"])
     assert FakeVLLM.requests == [] and not (tmp_path / "runs").exists()
 
 
 def test_changed_dataset_file_is_refused_on_resume(tmp_path, endpoint):
     data = tmp_path / "val.parquet"
     _dataset(data, n=2)
-    common = ["--endpoint", endpoint, "--model", "fake", "--dataset-path", str(data), "--out", str(tmp_path / "runs"), "--conditions", "no_tool"]
+    common = ["--endpoint", endpoint, "--model", "fake", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--out", str(tmp_path / "runs"), "--conditions", "no_tool"]
     run_eval.main(common)
     config = json.loads((tmp_path / "runs" / "no_tool" / "seed42" / "run_config.json").read_text())
     assert len(config["dataset"]["sha256"]) == 64 and config["dataset"]["revision"] is None  # not the pinned file
@@ -243,9 +243,9 @@ def test_dry_run_needs_no_out_and_judge_needs_pending(tmp_path, capsys):
 
     data = tmp_path / "val.parquet"
     _dataset(data, n=1)
-    run_eval.main(["--model", "x", "--dataset-path", str(data), "--conditions", "oracle_crop", "--dry-run"])
+    run_eval.main(["--model", "x", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--conditions", "oracle_crop", "--dry-run"])
     assert "zoomed-in view" in capsys.readouterr().out
     with pytest.raises(SystemExit):
-        run_eval.main(["--model", "x", "--dataset-path", str(data), "--conditions", "no_tool"])
+        run_eval.main(["--model", "x", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--conditions", "no_tool"])
     with pytest.raises(SystemExit, match="does not exist"):
         judge.main(["--pending", str(tmp_path / "missing.jsonl"), "--out", str(tmp_path / "out.jsonl")])

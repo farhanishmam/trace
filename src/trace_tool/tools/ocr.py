@@ -1,4 +1,5 @@
-"""OCR tool: detected text lines with boxes in the zoom tool's [0, 1000] frame.
+"""OCR tool: detected text lines with boxes in the model family's grounding frame
+(absolute pixels of the image as shown for Qwen2.5-VL, relative [0, 1000] for Qwen3-VL).
 
 Backends (selected with ``TRACE_TOOL_OCR_BACKEND`` or ``OCRTool(backend=...)``):
 - ``rapidocr`` (default): RapidOCR 3.x on onnxruntime, PP-OCR models bundled
@@ -26,7 +27,8 @@ from typing import Any, Protocol
 import numpy as np
 from PIL import Image
 
-from .base import Tool, ToolContext, ToolError, ToolResult, abs_to_rel_box, as_bbox, rel_to_abs_box, smart_resize
+from ..models import QWEN3_VL, ModelFamily
+from .base import COORD_PHRASE, Tool, ToolContext, ToolError, ToolResult, as_bbox, smart_resize
 from .zoom import maybe_resize_bbox
 
 MAX_LINES = 120
@@ -219,19 +221,19 @@ def _reading_order(lines: list[OCRLine]) -> list[OCRLine]:
 def run_ocr(
     backend: OCRBackend,
     image: Image.Image,
-    rel_bbox: list[float] | None = None,
+    pixel_box: list[float] | None = None,
     *,
     min_score: float = DEFAULT_MIN_SCORE,
-) -> list[tuple[str, list[int], float]]:
-    """OCR ``image`` (optionally only ``rel_bbox``); boxes come back in [0, 1000] coords of ``image``."""
+    min_side: int = 32,
+) -> list[tuple[str, list[float], float]]:
+    """OCR ``image`` (optionally only ``pixel_box``, grown to min_side); boxes come back in pixels of ``image``."""
     width, height = image.size
     left, top, right, bottom = 0.0, 0.0, float(width), float(height)
-    if rel_bbox is not None:
-        abs_box = rel_to_abs_box(rel_bbox, width, height)
-        left, top, right, bottom = maybe_resize_bbox(*abs_box, width, height)
+    if pixel_box is not None:
+        left, top, right, bottom = maybe_resize_bbox(*pixel_box, width, height, min_side=min_side)
         if right - left < 1 or bottom - top < 1:
             raise ToolError("Error: bbox_2d is empty after clipping to the image")
-    region = image.crop((left, top, right, bottom)) if rel_bbox is not None else image
+    region = image.crop((left, top, right, bottom)) if pixel_box is not None else image
     rw, rh = region.size
     new_h, new_w = smart_resize(rh, rw, factor=1, min_pixels=OCR_MIN_PIXELS, max_pixels=OCR_MAX_PIXELS)
     scale_x, scale_y = new_w / rw, new_h / rh
@@ -244,43 +246,45 @@ def run_ocr(
             continue
         x1, y1, x2, y2 = line.box
         box = [left + x1 / scale_x, top + y1 / scale_y, left + x2 / scale_x, top + y2 / scale_y]
-        results.append((line.text.strip(), abs_to_rel_box(box, width, height), line.score))
+        results.append((line.text.strip(), box, line.score))
     return results
 
 
 class OCRTool(Tool):
     name = "ocr"
-    description = (
-        "Read the text in an image (or in one region of it) with an OCR engine. Returns each detected "
-        "text line with its bounding box [x1, y1, x2, y2] in relative coordinates [0, 1000] of that image"
-    )
-    parameters = {
-        "type": "object",
-        "properties": {
-            "img_idx": {
-                "type": "number",
-                "description": "The index of the image to read (starting from 0)",
-            },
-            "bbox_2d": {
-                "type": "array",
-                "items": {"type": "number"},
-                "minItems": 4,
-                "maxItems": 4,
-                "description": (
-                    "Optional region to read, as [x1, y1, x2, y2] in relative coordinates [0, 1000]; "
-                    "omit to read the whole image"
-                ),
-            },
-        },
-        "required": ["img_idx"],
-    }
 
-    def __init__(self, backend: str | None = None, min_score: float = DEFAULT_MIN_SCORE) -> None:
+    def __init__(self, family: ModelFamily = QWEN3_VL, backend: str | None = None, min_score: float = DEFAULT_MIN_SCORE) -> None:
+        super().__init__(family)
+        frame = COORD_PHRASE[family.coords]
+        # Qwen3-VL keeps the original wording; "of that image" is already part of the pixel phrase
+        of_image = " of that image" if family.coords == "rel1000" else ""
+        self.description = (
+            "Read the text in an image (or in one region of it) with an OCR engine. Returns each detected "
+            f"text line with its bounding box [x1, y1, x2, y2] in {frame}{of_image}"
+        )
+        self._header_frame = "in [0, 1000]" if family.coords == "rel1000" else "in pixels of that image as you see it"
+        self.parameters = {
+            "type": "object",
+            "properties": {
+                "img_idx": {
+                    "type": "number",
+                    "description": "The index of the image to read (starting from 0)",
+                },
+                "bbox_2d": {
+                    "type": "array",
+                    "items": {"type": "number"},
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "description": f"Optional region to read, as [x1, y1, x2, y2] in {frame}; omit to read the whole image",
+                },
+            },
+            "required": ["img_idx"],
+        }
         self.backend_name = backend or os.environ.get("TRACE_TOOL_OCR_BACKEND", "rapidocr")
         self.backend: OCRBackend = shared_backend(self.backend_name)
         self.min_score = min_score
 
-    def _ocr_cached(self, image: Image.Image, rel_bbox: list[float] | None) -> list[tuple[str, list[int], float]]:
+    def _ocr_cached(self, image: Image.Image, pixel_box: list[float] | None) -> list[tuple[str, list[float], float]]:
         digest = hashlib.blake2b(image.tobytes(), digest_size=16).hexdigest()
         key = (
             self.backend_name,
@@ -288,24 +292,31 @@ class OCRTool(Tool):
             digest,
             image.size,
             image.mode,
-            None if rel_bbox is None else tuple(round(v, 1) for v in rel_bbox),
+            None if pixel_box is None else tuple(round(v, 1) for v in pixel_box),
+            self.family.zoom_min_side,
         )
         backend = self.backend  # tests swap in a counting wrapper
-        return _RESULT_CACHE.get(key, lambda: run_ocr(backend, image, rel_bbox, min_score=self.min_score))
+        return _RESULT_CACHE.get(
+            key, lambda: run_ocr(backend, image, pixel_box, min_score=self.min_score, min_side=self.family.zoom_min_side)
+        )
 
     def run(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
         img_idx = args.get("img_idx", 0)
         image = ctx.get_image(img_idx)
-        rel_bbox = as_bbox(args["bbox_2d"]) if args.get("bbox_2d") is not None else None
-        lines = self._ocr_cached(image, rel_bbox)
+        model_box = as_bbox(args["bbox_2d"]) if args.get("bbox_2d") is not None else None
+        pixel_box = ctx.to_source_box(model_box, img_idx, self.family.coords) if model_box is not None else None
+        lines = self._ocr_cached(image, pixel_box)
         if not lines:
             return ToolResult(text="No text detected.", meta={"n_lines": 0})
         shown = lines[:MAX_LINES]
         header = f"Detected {len(lines)} text lines in image {img_idx}"
-        if rel_bbox is not None:
-            header += f" region {[round(v) for v in rel_bbox]}"
-        header += " (text, bbox_2d in [0, 1000]):"
-        body = "\n".join(f"{i + 1}. {json.dumps(text, ensure_ascii=False)} {box}" for i, (text, box, _) in enumerate(shown))
+        if model_box is not None:
+            header += f" region {[round(v) for v in model_box]}"
+        header += f" (text, bbox_2d {self._header_frame}):"
+        body = "\n".join(
+            f"{i + 1}. {json.dumps(text, ensure_ascii=False)} {ctx.to_model_box(box, img_idx, self.family.coords)}"
+            for i, (text, box, _) in enumerate(shown)
+        )
         if len(lines) > MAX_LINES:
             body += f"\n... {len(lines) - MAX_LINES} more lines omitted; pass bbox_2d to read a smaller region."
         return ToolResult(text=f"{header}\n{body}", meta={"n_lines": len(lines)})

@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from .agent import DECODING_PRESETS, EpisodeConfig
+from .models import ModelFamily
 from .tools import TOOL_GROUPS, build_tools
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -56,10 +57,11 @@ def read_system_prompt(files: list[str], root: Path = REPO_ROOT) -> str:
     return "\n\n".join(parts)
 
 
-def build_episode_config(spec: dict[str, Any], *, seed: int, root: Path = REPO_ROOT) -> EpisodeConfig:
-    tools = build_tools(list(spec.get("tools") or []))
+def build_episode_config(spec: dict[str, Any], *, seed: int, family: ModelFamily, root: Path = REPO_ROOT) -> EpisodeConfig:
+    tools = build_tools(list(spec.get("tools") or []), family)
     return EpisodeConfig(
         system_prompt=read_system_prompt(list(spec["system_prompt_files"]), root),
+        family=family,
         tools=tools,
         seed=seed,
         **{k: spec[k] for k in _EPISODE_KEYS},
@@ -69,6 +71,9 @@ def build_episode_config(spec: dict[str, Any], *, seed: int, root: Path = REPO_R
 def describe(spec: dict[str, Any], cfg: EpisodeConfig) -> dict[str, Any]:
     """Settings recorded in run_config.json (and compared on resume)."""
     return {
+        "family": cfg.family.name,
+        "patch_factor": cfg.family.patch_factor,
+        "coords": cfg.family.coords,
         **{k: spec[k] for k in sorted(_EPISODE_KEYS)},
         "tools": sorted(cfg.tools),
         "tool_groups_requested": list(spec.get("tools") or []),

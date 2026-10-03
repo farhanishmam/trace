@@ -6,6 +6,7 @@ import pytest
 from trace_tool.tools import build_tools
 from trace_tool.tools.base import ToolContext
 from trace_tool.tools.zoom import ImageZoomInTool, zoom_crop
+from trace_tool.models import QWEN3_VL, QWEN25_VL
 
 from .conftest import make_image
 from .reference.qwen_agent_zoom import ReferenceZoom
@@ -48,7 +49,7 @@ def test_schema_matches_qwen_agent():
 
 
 def test_tool_call_and_image_indexing():
-    tool = build_tools(["zoom"])["image_zoom_in_tool"]
+    tool = build_tools(["zoom"], QWEN3_VL)["image_zoom_in_tool"]
     ctx = ToolContext([make_image(1200, 800)])
     first = tool({"bbox_2d": [0, 0, 500, 500], "label": "x", "img_idx": 0}, ctx)
     assert first.ok and len(first.images) == 1

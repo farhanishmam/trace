@@ -3,12 +3,13 @@ import pytest
 
 from trace_tool.tools import build_tools
 from trace_tool.tools.base import ToolContext
+from trace_tool.models import QWEN3_VL, QWEN25_VL
 
 from .conftest import make_image
 
 
 def test_rotate_flip_draw():
-    tools = build_tools(["visual_ops"])
+    tools = build_tools(["visual_ops"], QWEN3_VL)
     ctx = ToolContext([make_image(600, 400)])
     rotated = tools["image_rotate_tool"]({"angle": 90, "img_idx": 0}, ctx)
     assert rotated.ok and rotated.images[0].size[1] > rotated.images[0].size[0]
@@ -27,7 +28,7 @@ def test_rotate_flip_draw():
 @pytest.fixture(scope="module")
 def ocr_tool():
     pytest.importorskip("rapidocr")
-    return build_tools(["ocr"])["ocr"]
+    return build_tools(["ocr"], QWEN3_VL)["ocr"]
 
 
 def test_ocr_reads_text_and_maps_region_boxes(ocr_tool):

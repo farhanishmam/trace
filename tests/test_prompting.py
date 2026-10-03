@@ -7,6 +7,7 @@ import pytest
 
 from trace_tool.prompting import system_message, text_part, tool_response_content, user_prompt_content
 from trace_tool.tools import build_tools
+from trace_tool.models import QWEN3_VL, QWEN25_VL
 
 from .conftest import REPO, make_image
 
@@ -32,7 +33,7 @@ def _render(messages, tools=None):
 
 @pytest.mark.parametrize("n_responses", [1, 2])
 def test_flattened_matches_native(n_responses):
-    tools = build_tools(["zoom", "calculator"])
+    tools = build_tools(["zoom", "calculator"], QWEN3_VL)
     schemas = [t.schema() for t in tools.values()]
     image = make_image()
     prompt = '<image>Count the red boxes.\nExample JSON:\n{"answer":2}'

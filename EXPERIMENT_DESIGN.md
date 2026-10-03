@@ -1,10 +1,10 @@
-# Tool calling for Qwen3-VL on TRACE: experiment design
+# Tool calling for Qwen2.5-VL on TRACE: experiment design
 
 ## 1. Questions
 
 | # | Question | Phase |
 | --- | --- | --- |
-| Q1 | Does inference-time access to tools (zoom-in, other image ops, calculator, OCR) improve Qwen3-VL on the TRACE validation set, without any training? | 1 |
+| Q1 | Does inference-time access to tools (zoom-in, other image ops, calculator, OCR) improve Qwen2.5-VL-3B/7B (TRACE's base models) on the TRACE validation set, without any training? | 1 |
 | Q2 | Is a gain caused by the tool outputs, or by the longer token budget and the changed prompt that come with tool use? | 1 |
 | Q3 | Which tools help, on which TRACE domains and answer types, and how often does the model actually call them? | 1 |
 | Q4 | If Q1 is positive: does GRPO with tools beat GRPO without tools on TRACE, at equal steps and data? | 2 |
@@ -48,36 +48,51 @@ Verified against the sources on 2026-10-02.
 - RL recipe: EasyR1 GRPO for 500 steps, rollout batch 128, n=8, lr 1e-6, no KL, clip 0.2/0.3. Reward = 0.95 × exact-JSON answer + 0.05 × format.
 - Image size: median 0.76 MP, maximum 1.28 MP. Every image is below the 4.19 MP cap, so **nothing is downsampled at TRACE's resolution.**
 
+**Qwen2.5-VL (verified against the checkpoints at TRACE's pinned revisions).**
+- Its chat template has no tool support at all: no `tools` block and no `role: tool`. Qwen2.5-VL agents, including Qwen-Agent's `NousFnCallPrompt` and DeepEyes, put the Hermes tool block in the system prompt and return results as `<tool_response>` user turns. `<tool_call>` and `</tool_call>` are single tokens in its vocabulary.
+- It grounds in absolute pixel coordinates of the image as it sees it (after resizing to its 28-pixel patch grid: patch 14 × merge 2), not Qwen3-VL's relative [0, 1000].
+- The agentic baselines in ZwZ Table 4 (DeepEyes, Mini-o3, Thyme, Pixel-Reasoner) are all Qwen2.5-VL-7B. DeepEyes zooms with absolute pixel boxes and a 28-px minimum side, matching Qwen2.5-VL's native grounding, so we follow it. Mini-o3 and Pixel-Reasoner use relative / normalised boxes, and Thyme crops through generated code. The "official tool use" baseline is Qwen3-VL-specific.
+
 **What follows for zoom.** At native resolution, zoom cannot add pixels. It can only change token density (a small crop is re-encoded with at least 256 visual tokens) and what the model attends to. ZwZ's gains came from high-resolution benchmarks where downsampling hides detail. **Prediction:** zoom gains on TRACE at native resolution will be small. They should grow in the `*_lowres` conditions, where the model sees a ~0.4 MP copy but the tools crop from the full-resolution original.
 
 ## 3. Tools
 
-All coordinates are relative [0, 1000], the frame Qwen3-VL grounds in. `img_idx` indexes every image in the conversation in order of appearance: 0 is the input, and each image a tool returns is appended. This is Qwen-Agent's convention. Tools always read the full-resolution input.
+Coordinates follow each model family's native grounding frame (`src/trace_tool/models.py`):
+
+| Family | Coordinates | Patch grid | Zoom grows boxes to |
+| --- | --- | --- | --- |
+| Qwen2.5-VL (primary) | absolute pixels of the image as the model sees it (DeepEyes' convention) | 28 px | 28 px per side |
+| Qwen3-VL | relative [0, 1000] (cookbook) | 32 px | 32 px per side |
+
+The tools convert model coordinates to the full-resolution source, so the low-res conditions still crop real detail. Tool outputs are shown at their own size, which is the frame for later calls on them. `img_idx` indexes every image in the conversation in order of appearance: 0 is the input, and each image a tool returns is appended. This is Qwen-Agent's convention. Tools always read the full-resolution input.
 
 | Tool | Source | Arguments | Returns |
 | --- | --- | --- | --- |
-| `image_zoom_in_tool` | Exact port of Qwen-Agent / Qwen3-VL cookbook (ZwZ baseline). Pixel parity is tested against the upstream code, and arguments are validated like Qwen-Agent's jsonschema check. | `bbox_2d`, `label`, `img_idx` | Crop, upscaled per Qwen-Agent |
+| `image_zoom_in_tool` | Exact port of Qwen-Agent / Qwen3-VL cookbook (ZwZ baseline); for Qwen2.5-VL the same tool in DeepEyes' absolute-pixel convention. Pixel parity is tested against the upstream code, and arguments are validated like Qwen-Agent's jsonschema check. | `bbox_2d`, `label`, `img_idx` | Crop, upscaled per Qwen-Agent |
 | `image_rotate_tool` | ZwZ Table 9 "rotate"; schema ours | `angle` (counter-clockwise, degrees), `img_idx` | Rotated image, canvas expanded |
 | `image_flip_tool` | ZwZ Table 9 "flip"; schema ours | `direction` (horizontal / vertical), `img_idx` | Mirrored image |
 | `image_draw_tool` | ZwZ Table 9 "draw auxiliary lines"; schema ours | `lines`, `boxes`, `points`, `color`, `img_idx` | Annotated copy |
 | `calculator` | Ours | `expression` | Exact integers; floats shown to 12 significant digits (15 above 1e10). Comparisons, `floor`/`ceil`, `//` and `%` use the value as shown, cancellation noise in `+`/`-` is removed, and degree trig is exact at special angles. `round` is Python's, like TRACE's ground truth. Uses a character/identifier/AST whitelist with no `eval`, and a per-call budget that bounds every big-integer operation before it runs. Common notation slips (`2pi`, `5!`, `15%` as percent, `1,200`, `math.sqrt`) return a corrective error. |
-| `ocr` | Ours; RapidOCR 3.x (PP-OCR, onnxruntime, CPU) | `img_idx`, optional `bbox_2d` | Text lines with boxes in the [0, 1000] frame of that image |
+| `ocr` | Ours; RapidOCR 3.x (PP-OCR, onnxruntime, CPU) | `img_idx`, optional `bbox_2d` | Text lines with boxes in the family's frame (pixels of the image as shown for Qwen2.5-VL; [0, 1000] for Qwen3-VL) |
 
 Table 9 actions **not** implemented, and why:
 - **Zoom out, denoise:** TRACE images are clean renders shown at native size, so neither changes what the model sees.
-- **2D grounding:** Qwen3-VL grounds natively in the same coordinate frame.
+- **2D grounding:** both families ground natively in the frame the tools use.
 - **3D grounding / depth:** needs an extra perception model, which would turn the comparison into a test of that model.
 - **Web search:** nothing external is relevant to synthetic scenes.
 
 **Calls within a turn** run in order, each seeing the images earlier calls returned, as in Qwen-Agent. `img_idx` follows Python list indexing (−1 is the latest image).
 
-**Prompting.** The tool block is the Qwen3-VL template's own text, appended to the TRACE system prompt. Tool results return as `<tool_response>` user turns. `tests/test_prompting.py` renders our messages and the native `tools=` / `role: tool` path through the checkpoint's Jinja template and checks they are byte-identical. `scripts/check_template.py` repeats this with the real processor, and vLLM's `/tokenize`, on the server.
+**Prompting.** The tool block is Qwen-Agent's Nous text, which is also the Qwen3-VL template's own. It is appended to the TRACE system prompt, and tool results return as `<tool_response>` user turns. For Qwen2.5-VL, whose template has no tool path, this is the format Qwen2.5-VL agents are prompted with; `tests/test_qwen25.py` checks it through the Qwen2.5-VL template. `tests/test_prompting.py` renders our messages and the native `tools=` / `role: tool` path through the checkpoint's Jinja template and checks they are byte-identical. `scripts/check_template.py` repeats this with the real processor, and vLLM's `/tokenize`, on the server.
 
 ## 4. Phase 1: inference-time tools (Q1–Q3)
 
 ### Models
-- **Primary:** `Qwen/Qwen3-VL-8B-Instruct`.
-- **Secondary:** `Qwen/Qwen3-VL-4B-Instruct`. ZwZ reports both sizes, and a second size tells us whether an effect is consistent.
+- **Primary:** `Qwen/Qwen2.5-VL-7B-Instruct`. **Secondary:** `Qwen/Qwen2.5-VL-3B-Instruct`. These are TRACE's base models, at TRACE's pinned revisions (`scripts/_model_env.sh`).
+- **Built-in sanity check:** `no_tool` uses TRACE's validation protocol, so seed 42 should land near TRACE's published base scores, 34.25 (7B) and 24.45 (3B). A large gap means the setup is off.
+- **Optional:** TRACE's GRPO checkpoints `maveryn/trace-qwen2.5-vl-7b` / `-3b` (51.55 / 41.05). These answer a related question: do tools still help after RL without tools? They are also the published "RL without tools" point for Phase 2.
+- **Supported but secondary:** Qwen3-VL (`--family qwen3-vl`, auto-detected), for comparison with ZwZ's Qwen3-VL numbers.
+- **Expect weaker zero-shot tool use than Qwen3-VL,** especially at 3B. That would be a finding about these models, not about the tools, and it is what Phase 2's RL would address.
 - **Thinking variants are excluded from the main grid.** Their long reasoning would be cut off by TRACE's 2,048-token budget, and their templates handle earlier-turn reasoning differently. They can be added as a separate study.
 
 ### Conditions (`configs/conditions.yaml`)
@@ -101,7 +116,7 @@ Every condition uses the TRACE system prompt and TRACE decoding (temperature 0.6
 - `no_tool_budget` gives a single turn the same 8,192 tokens, which isolates the budget part.
 - No condition isolates the prompt part (the tool block without tools to call). `zoom_cookbook` shows how much prompt wording alone moves accuracy; read Q2 conclusions with that limit in mind.
 
-**Images.** Images are resized client-side (PIL bicubic) to the condition's pixel bounds, in multiples of 32, before they are sent. TRACE instead sends the original PNG and lets the server resize it. The target sizes are the same, but the interpolation can differ slightly from vLLM's processor. Every condition shares this, so it does not bias comparisons between conditions. It is the one known difference from TRACE's published request.
+**Images.** Images are resized client-side (PIL bicubic) to the condition's pixel bounds, on the family's patch grid (28 px for Qwen2.5-VL, 32 for Qwen3-VL), before they are sent. TRACE instead sends the original PNG and lets the server resize it. The target sizes are the same, but the interpolation can differ slightly from vLLM's processor. Every condition shares this, so it does not bias comparisons between conditions. It is the one known difference from TRACE's published request.
 
 ### Metrics
 - **Primary:** official accuracy, scored with TRACE's own code (vendored) and the judge fallback, on the final assistant message.
@@ -130,15 +145,15 @@ Every condition uses the TRACE system prompt and TRACE decoding (temperature 0.6
 
 ### Run plan
 1. **Smoke** (`scripts/smoke_test.sh`, 20 rows × all conditions), plus `scripts/check_template.py`. Read about 20 tool transcripts by hand: valid JSON calls, sensible boxes, a final JSON answer.
-2. **Pilot** (`STAGE=pilot`): 1,000 rows (one per task), seed 42, all 11 conditions, 8B. This is 11k episodes. Drop conditions that are clearly null or broken.
-3. **Full** (`STAGE=full`): 2,000 rows × seeds 42, 43, 44, with the core conditions and any surviving diagnostics, on both 8B and 4B. This is up to 42k episodes per model.
+2. **Pilot** (`STAGE=pilot`): 1,000 rows (one per task), seed 42, all 11 conditions, 7B. This is 11k episodes. Drop conditions that are clearly null or broken.
+3. **Full** (`STAGE=full`): 2,000 rows × seeds 42, 43, 44, with the core conditions and any surviving diagnostics, on both 7B and 3B. This is up to 42k episodes per model.
 4. **Judge pass** for missing/ambiguous extractions, then score, report and compare.
 
 ### Decision rule for Phase 2 (proposed; adjust if you prefer)
 Go to Phase 2 if some tool condition T meets all three:
 - (a) Seeds-pooled official accuracy beats **both** `no_tool` and `no_tool_budget` by ≥ 2 pp, with Holm-adjusted McNemar p < 0.05 on the per-seed tests.
 - (b) The tool is actually used: `tool_use_rate` (episodes with a successful call) ≥ 10%.
-- (c) The sign holds for the 4B model.
+- (c) The sign holds for the other model size (3B), or there is a clear reason it does not (e.g. 3B rarely calls tools).
 
 A weaker signal, such as gains confined to one or two domains, still justifies a small Phase 2 pilot. Zero-shot tool competence is a lower bound on what RL can teach. Phase 2's tool set should be the best T, plus `all` if it is not worse.
 
@@ -171,6 +186,8 @@ TRACE's EasyR1 backend is single-turn, so both arms run on **verl's `ToolAgentLo
 - masks tool tokens out of the loss (`response_mask`);
 - uses Hermes tool parsing.
 
+**Chat template.** verl renders tool schemas (`tools=`) and results (`role: tool`) through the policy's chat template. Qwen2.5-VL's template has neither, so its policy would never see the tools. `python -m trace_tool.rl.prepare_policy` copies the checkpoint and installs `configs/verl/qwen2_5_vl_tool_chat_template.jinja`, which renders tool turns byte-identically to the eval prompts (`tests/test_rl_template.py`). Use the prepared copy for every arm. If a multi-turn rollout ever lacks a tool-response turn boundary, the reward raises rather than silently crediting earlier turns.
+
 Scaffold in this repo (marked UNTESTED on GPU):
 - `trace_tool/rl/verl_tools.py`: BaseTool adapters. They pass verl our exact schemas.
 - `trace_tool/rl/reward.py`: TRACE reward on the final assistant segment. Tested on CPU, including verl's special-token-stripped decoding.
@@ -187,6 +204,8 @@ All arms train on TRACE train (64k rows, 64 per task), the same data order and t
 | A1 | tool agent | best Phase-1 tool set (e.g. zoom) |
 | A2 | tool agent | `all` (if different from A1) |
 | A3 (optional) | tool agent | as A1, plus a DeepEyes-style bonus for correct answers that used a tool (tests whether tool use must be encouraged) |
+
+Base models are Qwen2.5-VL-7B (and 3B), the same bases and data as TRACE's own runs. That gives A0 an external reference: TRACE's released EasyR1 checkpoints (51.55 / 41.05 on validation; +4.06 / +3.51 macro on 24 external benchmarks). If A0 in verl lands close to those, the framework switch did not change the recipe's effect, and A1/A2 vs. A0 isolates tools.
 
 ### Hyperparameters (TRACE EasyR1 → verl)
 - GRPO, n = 8, 128 prompts per step, mini-batch 128 (one update per step), 500 steps.
@@ -214,7 +233,7 @@ All arms train on TRACE train (64k rows, 64 per task), the same data order and t
 - **Training dynamics:** tool-call rate over training (do policies learn or abandon tools?), reward and accuracy curves, response length, tool error rate.
 
 ## 7. Open choices for you
-1. Model sizes and GPU budget. The default is 8B primary with 4B as the replication.
+1. GPU budget, and whether to include TRACE's RL checkpoints and Qwen3-VL. The default is Qwen2.5-VL-7B primary with 3B as the replication.
 2. The Phase-2 decision rule above.
 3. Whether to include Thinking variants as a separate study.
 4. The external benchmark list for Phase 2 (default: TRACE's 24 plus the ZwZ perception set).

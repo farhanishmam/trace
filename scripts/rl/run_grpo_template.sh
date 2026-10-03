@@ -14,7 +14,9 @@
 set -xeuo pipefail
 
 ARM=${ARM:?set ARM=notool|zoom|all}
-MODEL_PATH=${MODEL_PATH:-Qwen/Qwen3-VL-8B-Instruct}
+# TRACE's base model with the tool chat template installed (used for every arm):
+#   python -m trace_tool.rl.prepare_policy --model Qwen/Qwen2.5-VL-7B-Instruct --out models/qwen2.5-vl-7b-tools
+MODEL_PATH=${MODEL_PATH:-models/qwen2.5-vl-7b-tools}
 DATA_DIR=${DATA_DIR:-data/verl}
 N_GPUS=${N_GPUS:-8}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
@@ -44,7 +46,8 @@ ARGS=(
   data.filter_overlong_prompts=True
   data.truncation=error
   # TODO verify: image pixel bounds should be 262144..4194304 (TRACE); check how your verl
-  # version sets processor min/max pixels for Qwen3-VL.
+  # version sets processor min/max pixels. configs/verl/tools_*.yaml set family: qwen2.5-vl;
+  # change it to qwen3-vl for a Qwen3-VL policy.
   actor_rollout_ref.model.path="$MODEL_PATH"
   actor_rollout_ref.model.use_remove_padding=True
   actor_rollout_ref.model.enable_gradient_checkpointing=True
