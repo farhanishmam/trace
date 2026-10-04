@@ -21,6 +21,10 @@ DP=${DP:-1}
 MAX_LEN=${MAX_LEN:-32768}
 MAX_IMAGES=${MAX_IMAGES:-12}
 
+# only vision models take the image limit (vLLM <= 0.10.0 rejects it for text-only models)
+MM=()
+if [ "$MAX_IMAGES" != 0 ]; then MM=(--limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0}"); fi
+
 exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   --served-model-name "$SERVED" \
   --host 127.0.0.1 --port "$PORT" \
@@ -28,7 +32,7 @@ exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   --data-parallel-size "$DP" \
   --gpu-memory-utilization 0.90 \
   --max-model-len "$MAX_LEN" \
-  --limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0}" \
+  ${MM[@]+"${MM[@]}"} \
   --chat-template-content-format openai \
   --generation-config vllm \
   "$@"

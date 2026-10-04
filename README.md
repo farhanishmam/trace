@@ -50,6 +50,29 @@ If the OCR backend cannot load, `trace-tool-eval` stops at startup with the erro
 
 The dataset is fetched from the Hub on first use and pinned to `dataset-v1` (commit `4e5b5436…`, sha256-checked). For a local copy, pass `--dataset-path` to the CLIs, or set `DATASET_PATH=...` for the scripts.
 
+## Run everything with one script
+
+[`run_on_server.sh`](run_on_server.sh) runs the whole of Phase 1 on a Linux GPU server:
+1. setup, check, smoke;
+2. pilot and full, for 7B then 3B;
+3. the judge pass;
+4. comparisons;
+5. `results_summary.tgz` to send back.
+
+It starts and stops vLLM itself, logs to `logs/`, and resumes after a crash if you rerun it:
+
+```bash
+nohup bash run_on_server.sh > run.log 2>&1 &
+```
+
+Useful controls:
+- **Stop:** `kill <pid>` stops the current step and vLLM within seconds. The script prints its pid at the start. Rerun the same command to resume.
+- **Failures:** if vLLM dies, rows end in endpoint errors, or judge answers stay pending, the script stops with `INCOMPLETE` instead of producing partial results.
+- **GPUs:** `GPUS=0,1,2,3` gives one replica per GPU. `JUDGE_GPUS` takes 1, 2, 4 or 8 GPUs, about 80 GB in total, for Qwen3-32B.
+- **Pilot first:** to follow the design's gate, run `STEPS="setup check smoke pilot judge compare"`, read the pilot, then run `STEPS="full judge compare"`.
+
+The other settings are listed at the top of the file, including `VLLM_SPEC` to pin a vLLM build that matches your CUDA driver; setup checks that torch can see the GPU. The sections below are the same steps by hand.
+
 ## Run Phase 1
 
 All scripts take the checkpoint as `MODEL` (default `Qwen/Qwen2.5-VL-7B-Instruct`) and derive the rest from it in `scripts/_model_env.sh`:
