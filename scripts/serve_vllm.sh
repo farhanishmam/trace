@@ -11,6 +11,10 @@
 # the checkpoint's generation_config.json (top_k=20 etc.) from overriding the
 # sampling parameters each request sends. --chat-template-content-format openai
 # keeps content lists intact so <tool_response> text and images render in order.
+# Text-only models (MAX_IMAGES=0, e.g. the Qwen3-32B judge) get `string` instead:
+# Qwen3's template concatenates message content as a string, and under `openai`
+# every judge request failed with HTTP 400 "can only concatenate str (not
+# "list") to str" (2026-10-04 Phase 1 run).
 # The image limit covers 1 input image + 5 tool rounds x 2 calls.
 set -euo pipefail
 
@@ -23,7 +27,11 @@ MAX_IMAGES=${MAX_IMAGES:-12}
 
 # only vision models take the image limit (vLLM <= 0.10.0 rejects it for text-only models)
 MM=()
-if [ "$MAX_IMAGES" != 0 ]; then MM=(--limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0}"); fi
+CONTENT_FORMAT=string
+if [ "$MAX_IMAGES" != 0 ]; then
+  MM=(--limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0}")
+  CONTENT_FORMAT=openai
+fi
 
 exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   --served-model-name "$SERVED" \
@@ -33,6 +41,6 @@ exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   --gpu-memory-utilization 0.90 \
   --max-model-len "$MAX_LEN" \
   ${MM[@]+"${MM[@]}"} \
-  --chat-template-content-format openai \
+  --chat-template-content-format "$CONTENT_FORMAT" \
   --generation-config vllm \
   "$@"
