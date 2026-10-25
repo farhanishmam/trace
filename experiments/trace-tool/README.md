@@ -2,6 +2,8 @@
 
 Tests whether giving tools to Qwen2.5-VL-3B/7B, TRACE's own base models, improves them on [TRACE](https://huggingface.co/datasets/maveryn/trace). Qwen3.5-4B/9B (thinking off) run the same grid plus five conditions that force a final answer. Qwen3-VL is also supported.
 
+This project lives in `experiments/trace-tool/` of the TRACE repository and is self-contained: run every command below from this directory. It installs as its own package (`trace-tool`) and does not import `trace_tasks`; the TRACE scorer it needs is vendored under `src/trace_tool/vendor/trace_rlvr`. Findings: [Phase 1 (Qwen2.5-VL)](results/phase1/FINDINGS.md), [Qwen3.5](results/qwen35/FINDINGS.md).
+
 The tools:
 - the zoom-in tool from the "Zooming without Zooming" (ZwZ) tool-use baseline;
 - the other image operations in ZwZ Table 9;

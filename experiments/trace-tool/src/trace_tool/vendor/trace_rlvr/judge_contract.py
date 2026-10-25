@@ -201,4 +201,3 @@ def validate_judge_output(
     if not _evidence_supports_answer(evidence, answer, answer_type):
         raise JudgeOutputError("evidence does not contain the extracted answer")
     return {"status": "ok", "answer": answer, "evidence": evidence}
-
