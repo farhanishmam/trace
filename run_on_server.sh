@@ -16,17 +16,23 @@
 #   setup    virtualenv, vLLM, this package, headless OpenCV, CUDA preflight, unit tests, dataset
 #   check    prompt rendering against the served model (scripts/check_template.py)
 #   smoke    20 rows x every condition, then a tool-call health summary
-#   pilot    1000 rows (one per task), seed 42, all 11 conditions
-#   full     2000 rows x seeds 42,43,44, the 7 core conditions
+#   pilot    1000 rows (one per task), seed 42, all 11 conditions (+ the 5 *_forced ones for Qwen3.5)
+#   full     2000 rows x seeds 42,43,44, the 7 core conditions (+ the 5 *_forced ones for Qwen3.5)
 #   judge    Qwen3-32B extraction pass for unresolved answers, then re-score (TRACE protocol)
-#   compare  paired comparisons vs no_tool and vs no_tool_budget, and results_summary.tgz to send back
+#   compare  paired comparisons vs no_tool and vs no_tool_budget; if forced conditions ran, also
+#            compare_forced.md (forced conditions vs no_tool, their own Holm family) and
+#            compare_forced_vs_unforced.md (each forced condition vs its base, e.g. zoom_forced vs zoom;
+#            written even without no_tool); then results_summary.tgz to send back
 # Every step resumes where it stopped. The script stops (exit 1, "INCOMPLETE") instead of
 # carrying on when vLLM dies or rows end in endpoint errors; fix the cause and rerun.
 #
 # Settings (environment variables):
 #   MODELS          checkpoints, space-separated (default: TRACE's Qwen2.5-VL 7B and 3B bases at
-#                   TRACE's pinned revisions; maveryn/trace-qwen2.5-vl-7b also works)
+#                   TRACE's pinned revisions; maveryn/trace-qwen2.5-vl-7b also works; so do
+#                   Qwen/Qwen3.5-4B and Qwen/Qwen3.5-9B, at our pinned revisions, with thinking off)
 #   REVISION        one revision for every model in MODELS; REVISION= (empty) means latest
+#   EXTRA_CONDITIONS  conditions added to smoke/pilot/full for every model in MODELS (default, per model:
+#                   the 5 *_forced conditions for Qwen/Qwen3.5-*, none otherwise; see scripts/_model_env.sh)
 #   GPUS            GPUs for the model server (default 0); one data-parallel replica per GPU
 #   JUDGE_GPUS      GPUs for the Qwen3-32B judge, tensor parallel; must be 1, 2, 4 or 8 GPUs with
 #                   ~80 GB in total (default: the first 1/2/4/8 of GPUS)
@@ -34,7 +40,8 @@
 #   CONCURRENCY     episodes in flight per run (default 64 per model-server GPU)
 #   VLLM_SPEC       what setup installs (default "vllm"; pin e.g. "vllm==0.30.0" to match your CUDA driver)
 #   VENV, PYTHON    virtualenv dir (default .venv) and the Python >= 3.10 that creates it (default python3)
-#   HF_HOME         Hugging Face cache (~16 GB for 7B, ~8 GB for 3B, ~65 GB for the judge)
+#   HF_HOME         Hugging Face cache (~16 GB for 7B, ~8 GB for 3B, ~65 GB for the judge;
+#                   Qwen3.5: ~9 GB for 4B, ~19 GB for 9B)
 #   PREFETCH        1 (default): download weights before starting vLLM; 0: let vLLM download them
 #   PORT, JUDGE_PORT, SERVER_TIMEOUT (seconds to wait for vLLM to load, default 1800), LOGS (default logs)
 set -euo pipefail
@@ -61,13 +68,14 @@ JUDGE_MODEL=Qwen/Qwen3-32B
 JUDGE_REVISION=9216db5781bf21249d130ec9da846c4624c16137   # TRACE's pinned judge
 JUDGE_HEADS=64                                           # Qwen3-32B attention heads: TP must divide this
 CORE_TOOL_CONDITIONS="zoom visual_ops calculator ocr all"
+FORCED_TOOL_CONDITIONS="zoom_forced visual_ops_forced calculator_forced ocr_forced all_forced"  # base = name minus _forced
 
 mkdir -p "$LOGS"
 has_step() { [[ " $STEPS " == *" $1 "* ]]; }
 say() { printf '\n==== %s  %s\n' "$(date '+%F %T')" "$*"; }
 count_gpus() { tr ',' '\n' <<<"$1" | grep -c .; }
 served_name() { basename "$1" | tr '[:upper:]' '[:lower:]'; }
-# TRACE's pinned revision for a model (scripts/_model_env.sh); empty for other models
+# the pinned revision for a model (scripts/_model_env.sh); empty for other models
 pinned_revision() { (unset REVISION; MODEL=$1; source scripts/_model_env.sh; echo "$REVISION"); }
 
 # ---------------------------------------------------------------- validate settings up front
@@ -311,18 +319,38 @@ if has_step compare; then
     [ -f "$out/report.md" ] || score_out "$out"
     tools=()
     for c in $CORE_TOOL_CONDITIONS; do if [ -d "$out/$c" ]; then tools+=("$c"); fi; done
-    if [ ! -d "$out/no_tool" ] || [ ${#tools[@]} -eq 0 ]; then
-      say "compare: $out has no no_tool baseline or tool conditions; skipping"; continue
+    forced=()
+    for c in $FORCED_TOOL_CONDITIONS; do if [ -d "$out/$c" ]; then forced+=("$c"); fi; done
+    pairs=()   # forced conditions whose unforced base ran too; comparing these needs no no_tool
+    if [ ${#forced[@]} -gt 0 ]; then
+      for c in "${forced[@]}"; do if [ -d "$out/${c%_forced}" ]; then pairs+=("$c"); fi; done
     fi
-    say "compare: $out"
-    family=("${tools[@]}")
-    if [ -d "$out/no_tool_budget" ]; then family=(no_tool_budget "${tools[@]}"); fi
-    # decision rule (a): tools vs no_tool (pre-registered Holm family) and vs no_tool_budget
-    trace-tool-compare "$out" --baseline no_tool --conditions "$(IFS=,; echo "${family[*]}")" --out "$out/compare.md" >/dev/null
-    if [ -d "$out/no_tool_budget" ]; then
-      trace-tool-compare "$out" --baseline no_tool_budget --conditions "$(IFS=,; echo "${tools[*]}")" --out "$out/compare_vs_budget.md" >/dev/null
+    if [ ! -d "$out/no_tool" ] || [ $((${#tools[@]} + ${#forced[@]})) -eq 0 ]; then
+      if [ ${#pairs[@]} -eq 0 ]; then
+        say "compare: $out has no no_tool baseline or tool conditions; skipping"; continue
+      fi
+      say "compare: $out (no no_tool baseline: forced vs unforced only)"
+    else
+      say "compare: $out"
+      if [ ${#tools[@]} -gt 0 ]; then
+        family=("${tools[@]}")
+        if [ -d "$out/no_tool_budget" ]; then family=(no_tool_budget "${tools[@]}"); fi
+        # decision rule (a): tools vs no_tool (pre-registered Holm family) and vs no_tool_budget
+        trace-tool-compare "$out" --baseline no_tool --conditions "$(IFS=,; echo "${family[*]}")" --out "$out/compare.md" >/dev/null
+        if [ -d "$out/no_tool_budget" ]; then
+          trace-tool-compare "$out" --baseline no_tool_budget --conditions "$(IFS=,; echo "${tools[*]}")" --out "$out/compare_vs_budget.md" >/dev/null
+        fi
+      fi
+      if [ ${#forced[@]} -gt 0 ]; then
+        # forced final answer: a separate Holm family vs no_tool
+        trace-tool-compare "$out" --baseline no_tool --conditions "$(IFS=,; echo "${forced[*]}")" --out "$out/compare_forced.md" >/dev/null
+      fi
+      trace-tool-compare "$out" --baseline no_tool --out "$out/compare_all.md" >/dev/null   # every condition, diagnostics too
     fi
-    trace-tool-compare "$out" --baseline no_tool --out "$out/compare_all.md" >/dev/null   # every condition, diagnostics too
+    if [ ${#pairs[@]} -gt 0 ]; then
+      # each forced condition vs its unforced base, e.g. zoom_forced vs zoom
+      for c in "${pairs[@]}"; do trace-tool-compare "$out" --baseline "${c%_forced}" --conditions "$c"; done >"$out/compare_forced_vs_unforced.md"
+    fi
     ls "$out"/compare*.md "$out/report.md" | sed 's/^/  /'
   done
   # bundle to send back: reports, comparisons, per-row scores, summaries, configs, env and check/smoke logs (no transcripts)

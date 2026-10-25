@@ -31,7 +31,7 @@ from .agent import OpenAIChatBackend, build_initial_messages, run_episode
 from .conditions import DEFAULT_CONFIG, REPO_ROOT, build_episode_config, describe, load_conditions
 from .data import REVISION, SPLIT_SHA256, file_sha256, load_split, resolve_split_path, select_rows
 from .jsonl import append_jsonl, exclusive_lock, read_jsonl, repair_tail
-from .models import FAMILIES, detect_family, get_family
+from .models import FAMILIES, chat_template_kwargs, detect_family, get_family
 from .prompting import render_text
 
 log = logging.getLogger("trace_tool.run_eval")
@@ -249,7 +249,9 @@ def main(argv: list[str] | None = None) -> None:
 
     async def run_all() -> None:
         # one event loop for the whole sweep: the AsyncOpenAI client is bound to it
-        backend = OpenAIChatBackend(args.endpoint, args.model, timeout=args.request_timeout)
+        backend = OpenAIChatBackend(
+            args.endpoint, args.model, timeout=args.request_timeout, chat_template_kwargs=chat_template_kwargs(args.family_obj)
+        )
         with ThreadPoolExecutor(max_workers=args.tool_threads) as pool:
             for seed in seeds:
                 for name in names:

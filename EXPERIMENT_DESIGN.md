@@ -9,6 +9,7 @@
 | Q3 | Which tools help, on which TRACE domains and answer types, and how often does the model actually call them? | 1 |
 | Q4 | If Q1 is positive: does GRPO with tools beat GRPO without tools on TRACE, at equal steps and data? | 2 |
 | Q5 | Do tool-trained policies transfer better to external benchmarks, with and without tools at test time? | 2 |
+| Q6 | Qwen3.5-4B/9B (thinking off): Q1–Q3 again, and does a stated call budget with a forced final answer change accuracy relative to the same tools without it? | 1 |
 
 ## 2. Facts this design rests on
 
@@ -53,6 +54,15 @@ Verified against the sources on 2026-10-02.
 - It grounds in absolute pixel coordinates of the image as it sees it (after resizing to its 28-pixel patch grid: patch 14 × merge 2), not Qwen3-VL's relative [0, 1000].
 - The agentic baselines in ZwZ Table 4 (DeepEyes, Mini-o3, Thyme, Pixel-Reasoner) are all Qwen2.5-VL-7B. DeepEyes zooms with absolute pixel boxes and a 28-px minimum side, matching Qwen2.5-VL's native grounding, so we follow it. Mini-o3 and Pixel-Reasoner use relative / normalised boxes, and Thyme crops through generated code. The "official tool use" baseline is Qwen3-VL-specific.
 
+**Qwen3.5 (`Qwen/Qwen3.5-4B` and `-9B`, verified on the pinned snapshots on 2026-10-05).**
+- `Qwen3_5ForConditionalGeneration`, with vision patch 16 × merge 2, so the same 32-pixel grid as Qwen3-VL.
+- Both checkpoints have the same chat template. It differs from Qwen3-VL's in four ways:
+  - tool calls are XML: `<tool_call>`, `<function=NAME>`, then `<parameter=KEY>`, the value and `</parameter>` per argument, then `</function>`, `</tool_call>`, one per line;
+  - the tool block comes before the system prompt;
+  - each `role: tool` message is trimmed of edge whitespace;
+  - the model thinks unless `enable_thinking` is false.
+- It grounds in relative [0, 1000] coordinates. A probe confirmed this (vLLM 0.30.0, thinking off, greedy): on synthetic 1600×800, 800×1600 and 1920×640 images, both checkpoints returned boxes within a few units of the relative-[0, 1000] box in 12 of 12 answers.
+
 **What follows for zoom.** At native resolution, zoom cannot add pixels. It can only change token density (a small crop is re-encoded with at least 256 visual tokens) and what the model attends to. ZwZ's gains came from high-resolution benchmarks where downsampling hides detail. **Prediction:** zoom gains on TRACE at native resolution will be small. They should grow in the `*_lowres` conditions, where the model sees a ~0.4 MP copy but the tools crop from the full-resolution original.
 
 ## 3. Tools
@@ -63,6 +73,7 @@ Coordinates follow each model family's native grounding frame (`src/trace_tool/m
 | --- | --- | --- | --- |
 | Qwen2.5-VL (primary) | absolute pixels of the image as the model sees it (DeepEyes' convention) | 28 px | 28 px per side |
 | Qwen3-VL | relative [0, 1000] (cookbook) | 32 px | 32 px per side |
+| Qwen3.5 | relative [0, 1000] (confirmed by probe, §2) | 32 px | 32 px per side |
 
 The tools convert model coordinates to the full-resolution source, so the low-res conditions still crop real detail. Tool outputs are shown at their own size, which is the frame for later calls on them. `img_idx` indexes every image in the conversation in order of appearance: 0 is the input, and each image a tool returns is appended. This is Qwen-Agent's convention. Tools always read the full-resolution input.
 
@@ -73,7 +84,7 @@ The tools convert model coordinates to the full-resolution source, so the low-re
 | `image_flip_tool` | ZwZ Table 9 "flip"; schema ours | `direction` (horizontal / vertical), `img_idx` | Mirrored image |
 | `image_draw_tool` | ZwZ Table 9 "draw auxiliary lines"; schema ours | `lines`, `boxes`, `points`, `color`, `img_idx` | Annotated copy |
 | `calculator` | Ours | `expression` | Exact integers; floats shown to 12 significant digits (15 above 1e10). Comparisons, `floor`/`ceil`, `//` and `%` use the value as shown, cancellation noise in `+`/`-` is removed, and degree trig is exact at special angles. `round` is Python's, like TRACE's ground truth. Uses a character/identifier/AST whitelist with no `eval`, and a per-call budget that bounds every big-integer operation before it runs. Common notation slips (`2pi`, `5!`, `15%` as percent, `1,200`, `math.sqrt`) return a corrective error. |
-| `ocr` | Ours; RapidOCR 3.x (PP-OCR, onnxruntime, CPU) | `img_idx`, optional `bbox_2d` | Text lines with boxes in the family's frame (pixels of the image as shown for Qwen2.5-VL; [0, 1000] for Qwen3-VL) |
+| `ocr` | Ours; RapidOCR 3.x (PP-OCR, onnxruntime, CPU) | `img_idx`, optional `bbox_2d` | Text lines with boxes in the family's frame (pixels of the image as shown for Qwen2.5-VL; [0, 1000] for Qwen3-VL and Qwen3.5) |
 
 Table 9 actions **not** implemented, and why:
 - **Zoom out, denoise:** TRACE images are clean renders shown at native size, so neither changes what the model sees.
@@ -85,15 +96,38 @@ Table 9 actions **not** implemented, and why:
 
 **Prompting.** The tool block is Qwen-Agent's Nous text, which is also the Qwen3-VL template's own. It is appended to the TRACE system prompt, and tool results return as `<tool_response>` user turns. For Qwen2.5-VL, whose template has no tool path, this is the format Qwen2.5-VL agents are prompted with; `tests/test_qwen25.py` checks it through the Qwen2.5-VL template. `tests/test_prompting.py` renders our messages and the native `tools=` / `role: tool` path through the checkpoint's Jinja template and checks they are byte-identical. `scripts/check_template.py` repeats this with the real processor, and vLLM's `/tokenize`, on the server.
 
-## 4. Phase 1: inference-time tools (Q1–Q3)
+**Prompting for Qwen3.5** follows its own template instead:
+- The tool block is the template's XML block, verbatim, followed by the system prompt.
+- Tool results return as `<tool_response>` user turns, as above. Each body's edge whitespace is trimmed, as the template trims `role: tool` content.
+- Every request sends `chat_template_kwargs: {"enable_thinking": false}`.
+- Calls are parsed by `parse_xml_tool_calls`, modelled on vLLM's qwen3 XML parser, and each value is typed by the tool's JSON schema. String parameters stay strings, so a label `123` is not turned into a number.
+- The grammar: blocks are `<tool_call>` … `</tool_call>`; inside one, a function runs from `<function=NAME>` to `</function>` (a missing `</function>` at the end of the block is tolerated); one wrapping newline is stripped from each value. In vLLM a parameter value ends only at `</parameter>` or at the next `<parameter=`. Here it also ends at the end of the function body.
+- The vLLM server runs without a tool parser, so `parse_xml_tool_calls` alone decides what is a call. These are the known differences from vLLM 0.30.0's parser (`Qwen3Parser`, non-streaming). They were found by running both parsers on hand-written and fuzzed inputs, so the list may not be exhaustive. `tests/test_parsing.py` pins each one as current behaviour (`test_xml_documented_differences_from_vllm` and the two tests after it), and the comment above `_FUNCTION_RE` in `parsing.py` repeats the list.
+  - **Unterminated blocks.** A `<tool_call>` without its `</tool_call>` gets "Error: unterminated <tool_call> block", as in the Hermes parser, even when its `<function=...>...</function>` is complete. The same holds for a `<tool_call>` cut off mid-value by the length limit. vLLM returns the call, without the cut-off value (e.g. `calculator({})`).
+  - **Bare functions.** A bare `<function=...>...</function>`, without the `<tool_call>` wrapper, counts as a call only when the reply holds no `<tool_call>` at all. Next to a `<tool_call>` block it is ignored: it gets no response and no error, and it does not count against a budget. vLLM returns both calls.
+  - A bare block needs its `</function>`. Without it the reply has no call, so the turn is an answer. vLLM returns a call.
+  - **Two functions in one block.** When `<function=A>` lacks its `</function>` and `<function=B>` follows in the same `<tool_call>`, this parser returns two calls. vLLM merges them into one call to A with the parameters of both, and B's value wins for a key both have.
+  - **No usable function.** A `<tool_call>` with no `<function=NAME>` in it (prose, or `<function = NAME>` with spaces) or with an empty name gets the error that shows the XML format. vLLM finds no call. A `<function=NAME` whose `>` is missing gets the same error; vLLM returns a call with a garbled name.
+  - **`</tool_call>` inside a value** ends the block here, so the value is cut there. vLLM keeps it in the value.
+  - **Parameter names** are stripped here. vLLM keeps trailing whitespace, so `<parameter=label >` gives the key `label `, which the tool would reject.
+  - **More lenient than vLLM.** A Hermes JSON call inside `<tool_call>` is parsed. vLLM finds none, and when an XML call follows it, vLLM returns only the XML one. A last parameter missing its `</parameter>` keeps its value, with or without `</function>`; vLLM drops that parameter.
+  - **Typing.** vLLM never fails while typing: a value it cannot convert is passed on as the raw string, for the tool to reject. Here such a value is a parse error, e.g. "Error: parameter 'angle' must be a number" for `90 degrees` or `inf`. Against a number, vLLM reads `null` as null and `true` as true; both are errors here.
+  - **Numbers.** Values written `1e3` or `90.0` are floats here; vLLM makes them ints. The tools accept integral floats. `1_000` is an error here; vLLM reads it as 1000, as Python's `int()` and `float()` do.
+  - **Arrays and objects.** json5 is the fallback here, so trailing commas, single quotes and hex numbers parse. Non-finite numbers (`1e999`, `Infinity`, `NaN`) are kept as float inf/nan. vLLM keeps the raw string in both cases.
+  - **Integers and booleans** (no shipped tool has one). vLLM also reads `2.5` for an integer, and `1`/`0` for a boolean. Both are errors here.
+
+`tests/test_qwen35.py` checks byte-identity against the native path of the vendored template (`tests/data/qwen3_5_chat_template.jinja`), with thinking off and on. `scripts/check_template.py` repeats this with the real processor and vLLM's `/tokenize`, including a forced-mode conversation.
+
+## 4. Phase 1: inference-time tools (Q1–Q3, Q6)
 
 ### Models
 - **Primary:** `Qwen/Qwen2.5-VL-7B-Instruct`. **Secondary:** `Qwen/Qwen2.5-VL-3B-Instruct`. These are TRACE's base models, at TRACE's pinned revisions (`scripts/_model_env.sh`).
 - **Built-in sanity check:** `no_tool` uses TRACE's validation protocol, so seed 42 should land near TRACE's published base scores, 34.25 (7B) and 24.45 (3B). A large gap means the setup is off.
 - **Optional:** TRACE's GRPO checkpoints `maveryn/trace-qwen2.5-vl-7b` / `-3b` (51.55 / 41.05). These answer a related question: do tools still help after RL without tools? They are also the published "RL without tools" point for Phase 2.
+- **Qwen3.5:** `Qwen/Qwen3.5-4B` and `Qwen/Qwen3.5-9B` at pinned revisions (`scripts/_model_env.sh`), with thinking off. They run the whole grid plus the five forced conditions (below), with TRACE decoding in every condition, so they compare directly with the Qwen2.5-VL runs. They are served with a 65,536-token context (`MAX_LEN`, set in `scripts/_model_env.sh`; the Qwen2.5-VL runs used `serve_vllm.sh`'s 32,768 default), so a long `visual_ops` or `all` episode, which can carry up to 11 images, is not rejected for prompt length. The context length changes no request, only whether a long one is accepted.
 - **Supported but secondary:** Qwen3-VL (`--family qwen3-vl`, auto-detected), for comparison with ZwZ's Qwen3-VL numbers.
 - **Expect weaker zero-shot tool use than Qwen3-VL,** especially at 3B. That would be a finding about these models, not about the tools, and it is what Phase 2's RL would address.
-- **Thinking variants are excluded from the main grid.** Their long reasoning would be cut off by TRACE's 2,048-token budget, and their templates handle earlier-turn reasoning differently. They can be added as a separate study.
+- **Thinking variants are excluded from the main grid.** Their long reasoning would be cut off by TRACE's 2,048-token budget, and their templates handle earlier-turn reasoning differently. They can be added as a separate study. Qwen3.5 thinks by default; here it runs with thinking off.
 
 ### Conditions (`configs/conditions.yaml`)
 
@@ -111,12 +145,50 @@ Every condition uses the TRACE system prompt and TRACE decoding (temperature 0.6
 | `zoom_cookbook` | zoom | default | Prompt ablation: cookbook "research assistant" prompt before the TRACE prompt |
 | `oracle_crop` | — | 1 turn | Upper bound for perfect localisation: adds a crop of the ground-truth annotation region. Diagnostic only, because it can leak the answer. |
 | `no_tool_lowres` / `zoom_lowres` | — / zoom | as `no_tool` / `zoom` | Model sees ≤ 0.4 MP; tools read full resolution. Tests ZwZ footnote 1. |
+| `zoom_forced`, `visual_ops_forced`, `calculator_forced`, `ocr_forced`, `all_forced` | as the base condition | default, with 10 tool calls in total | Qwen3.5 only: the base condition with a stated call budget and a forced final answer (below) |
 
 **Q2 control.** A tool condition differs from `no_tool` in two ways: the appended tool block, and a multi-turn budget (6 turns, 8,192 generated tokens).
 - `no_tool_budget` gives a single turn the same 8,192 tokens, which isolates the budget part.
 - No condition isolates the prompt part (the tool block without tools to call). `zoom_cookbook` shows how much prompt wording alone moves accuracy; read Q2 conclusions with that limit in mind.
 
-**Images.** Images are resized client-side (PIL bicubic) to the condition's pixel bounds, on the family's patch grid (28 px for Qwen2.5-VL, 32 for Qwen3-VL), before they are sent. TRACE instead sends the original PNG and lets the server resize it. The target sizes are the same, but the interpolation can differ slightly from vLLM's processor. Every condition shares this, so it does not bias comparisons between conditions. It is the one known difference from TRACE's published request.
+**Images.** Images are resized client-side (PIL bicubic) to the condition's pixel bounds, on the family's patch grid (28 px for Qwen2.5-VL, 32 for Qwen3-VL and Qwen3.5), before they are sent. TRACE instead sends the original PNG and lets the server resize it. The target sizes are the same, but the interpolation can differ slightly from vLLM's processor. Every condition shares this, so it does not bias comparisons between conditions. It is the one known difference from TRACE's published request.
+
+### Forced final answer (Qwen3.5)
+
+An unforced tool episode can end without an answer. It stops when the 6 turns or the 8,192 tokens run out, and calls in the last turn are never executed, which allows at most 5 tool turns × 2 calls = 10 calls within the per-turn cap.
+
+The five `*_forced` conditions keep everything of their base condition: tools, prompt files, `trace` decoding, pixel bounds, 6 turns, 2,048 tokens per turn, 8,192 in total, and 2 calls per turn. They add the following (`configs/conditions.yaml`: `forced_answer: true`, `tool_call_budget: 10`, and `answer_token_reserve`, default 1,024):
+
+1. **Budget statement.** The system prompt is the TRACE prompt, then `\n\n`, then: "You can make at most 10 tool calls in total, and at most 2 per turn. Each tool response ends with the number of tool calls you have left. When none are left, give your final answer without calling any tools." For Qwen3.5 the tool block comes before both, as usual.
+2. **Budget.** In a turn, the first min(2, calls left) calls are handled as usual and count against the budget of 10, malformed ones included.
+   - Further calls, up to the per-turn cap, get "Error: no tool calls left; this call was skipped." (`skipped: "call_budget"`).
+   - Calls beyond the cap get the usual per-turn error (`skipped: "per_turn_cap"`).
+3. **Token reserve.** Each tool turn's max_tokens is min(2,048, tokens left − 1,024), so 1,024 tokens stay for the answer. The forced final turn gets min(2,048, tokens left). Only a forced turn spends the reserve; see the known limit below for an episode that ends before one.
+4. **Countdown.** After every tool turn that does not force, the last tool response ends with `\n\n[Tool calls left: N]`, inside its `<tool_response>` tags. N = min(calls left, (turns left − 1) × 2), because the last turn is kept for the answer.
+5. **Forcing.** After a tool turn, the next turn is forced if one of these holds, checked in this order:
+   - only one turn is left (`forced_reason: "turns"`);
+   - no calls are left (`"calls"`);
+   - only the reserve is left, that is 8,192 − tokens generated ≤ 1,024 (`"tokens"`).
+
+   The last tool response then ends with this notice instead of the countdown: "[No tool calls left. Do not call any more tools. Give your final answer now, ending your response with a JSON object in this format: {"answer": ...}]". It mirrors the required ending of the TRACE prompt.
+
+   **With the shipped settings the budget never binds.** The budget of 10 equals 5 tool turns × 2 calls, which is all the turn limit allows. Before any tool turn at most 8 calls have been used (2 in each of at most 4 earlier turns), so at least 2, the per-turn cap, are left: no call is skipped for the budget (`call_budget` never occurs), and the turn limit is reached before the budget is spent. `forced_reason` is therefore `"turns"` or `"tokens"`, never `"calls"`. The budget rules (step 2, and `"calls"` here) act only when `tool_call_budget` is below `(max_turns − 1) × max_calls_per_turn`; the tests cover them with smaller budgets.
+6. **Final turn.** Tool calls in the forced turn are recorded but never executed (`skipped: "forced_answer"`). The episode then stops with `forced_tool_call`. Without calls, the stop reason is `answer`, or the finish reason (e.g. `length`). Hallucinated `<tool_response>` text is cut off as in every tool turn, and a reply without calls that was cut that way stops with `answer`.
+   - **Scoring.** As in every condition, the final assistant message is scored as written, whatever the stop reason, except for endpoint errors: rows with stop reason `error` are retried by a rerun of `trace-tool-eval` and left out of the scores until then. So in a `forced_tool_call` episode a JSON answer written before the unexecuted call counts, and can be correct. A reply that is only a call has no answer to extract and goes to the judge fallback, like any reply without one.
+   - **Loss decomposition.** `scripts/decompose_losses.py` treats only stop reason `answer` as answered, so it puts `forced_tool_call` episodes with the rows that ended without an answer.
+
+Consequences:
+- **No messages are added mid-episode.** The notices are text inside the last `<tool_response>`. For Qwen3.5, any text outside the tags turns the tool turn into a new user query, which changes how the earlier turns render.
+- **`max_turns` and `token_budget` cannot occur** as stop reasons in forced conditions.
+- **Known limit of the token rule.** `"tokens"` forces only once no more than the reserve is left. With more than 1,024 but fewer than 3,072 tokens left (5,120 to 7,168 generated), a tool turn is capped at tokens left − 1,024, below the 2,048 the base condition would allow.
+  - If that turn is cut at its limit before it writes a call, it is a turn without calls. The episode then stops with `length` (`forced_turn: false`), no forced turn follows, and the reserve goes unused.
+  - An answer written directly in such a turn can be cut where the base condition would have finished it.
+  - A turn cut in the middle of a call is not affected: the unterminated call counts, only the reserve is left, and the next turn is forced.
+  - This needs over 5,120 tokens of tool turns, so it should be rare. It is a choice of the forcing rule, kept as specified; forcing by tokens once fewer than 2,048 + 1,024 tokens are left would remove it, but would also force earlier.
+- **Records.** Each episode records `tool_call_budget`, `tool_calls_used`, `forced_turn` and `forced_reason`. `tool_calls_used` counts every call handled against the budget, malformed and unknown-function calls included (their records have `executed: false`), so it is not the number of executed calls.
+- **Settings.** `run_config.json` records `forced_answer`, `tool_call_budget`, `answer_token_reserve` and `forced_prompt_sha256` (the sha256 of the three prompt texts), so a resume with any of them changed is refused. Other conditions record none of these keys.
+
+**What forced vs. unforced measures.** The budget equals the base condition's implicit one (10 calls within the per-turn cap), so it never binds (see step 5); the stated budget informs the model but takes nothing away. A forced condition differs from its base in four things together: the budget statement, the countdown, the token reserve and the forced final turn. So `compare_forced_vs_unforced.md` measures the whole package, not each part.
 
 ### Metrics
 - **Primary:** official accuracy, scored with TRACE's own code (vendored) and the judge fallback, on the final assistant message.
@@ -138,6 +210,7 @@ Every condition uses the TRACE system prompt and TRACE decoding (temperature 0.6
 - **Per seed:** paired bootstrap 95% CI of Δaccuracy, plus an exact McNemar test (`trace-tool-compare`).
 - **Seeds pooled:** each row's correctness is averaged over seeds before bootstrapping.
 - **Multiple comparisons:** Holm correction across the compared conditions vs. `no_tool`. For the full run that is the 5 tool conditions plus `no_tool_budget`: `trace-tool-compare <out> --conditions no_tool_budget,zoom,visual_ops,calculator,ocr,all`. Without `--conditions`, every condition in the directory joins the family (in the pilot that includes the diagnostics).
+- **Forced conditions (Qwen3.5)** are a separate Holm family vs. `no_tool`: `trace-tool-compare <out> --conditions zoom_forced,visual_ops_forced,calculator_forced,ocr_forced,all_forced` (`compare_forced.md`). Each forced condition is also compared with its base condition alone, e.g. `--baseline zoom --conditions zoom_forced` (`compare_forced_vs_unforced.md`). The core family above is unchanged.
 - **Rough minimum detectable effect.** Assume 15–25% of rows flip between two conditions. Then the standard error of Δ is about √(0.2/n): ~1.0 pp at n = 2000 and ~1.4 pp at n = 1000. So, at α = 0.05 and 80% power:
   - a single seed resolves effects of about **≥ 3 pp** on the full set, and about 4 pp in the 1,000-row pilot;
   - three seeds reduce decoding noise, but not row-sampling noise.
@@ -148,6 +221,7 @@ Every condition uses the TRACE system prompt and TRACE decoding (temperature 0.6
 2. **Pilot** (`STAGE=pilot`): 1,000 rows (one per task), seed 42, all 11 conditions, 7B. This is 11k episodes. Drop conditions that are clearly null or broken.
 3. **Full** (`STAGE=full`): 2,000 rows × seeds 42, 43, 44, with the core conditions and any surviving diagnostics, on both 7B and 3B. This is up to 42k episodes per model.
 4. **Judge pass** for missing/ambiguous extractions, then score, report and compare.
+5. **Qwen3.5-4B and -9B:** the same steps. Pilot and full also include the five forced conditions (`EXTRA_CONDITIONS` in `scripts/_model_env.sh`), so the full run is up to 12 conditions × 2,000 rows × 3 seeds = 72k episodes per model.
 
 ### Decision rule for Phase 2 (proposed; adjust if you prefer)
 Go to Phase 2 if some tool condition T meets all three:
@@ -168,7 +242,8 @@ A weaker signal, such as gains confined to one or two domains, still justifies a
 For every condition, model and seed, the harness writes `responses.jsonl`, containing:
 - the full transcript (images as index and size);
 - every requested tool call with its arguments, result text, executed/ok flags and latency (calls the turn limit prevented are recorded as not executed);
-- stop reason, turns and token counts.
+- stop reason, turns and token counts;
+- for forced conditions, the call budget, calls used, and whether and why a final answer was forced.
 
 Runs are resumable, and a crash mid-write is repaired on the next run. A rerun refuses to mix models, settings, dataset selections or OCR backends into an existing directory, and a lock stops two writers. Episodes that end in an endpoint error are retried on the next run and are excluded from scores until then; the report shows how many.
 

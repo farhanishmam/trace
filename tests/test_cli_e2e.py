@@ -13,6 +13,13 @@ from trace_tool import compare, run_eval, score_runs
 from .conftest import make_image, png_bytes
 
 ZOOM = '<tool_call>\n{"name": "image_zoom_in_tool", "arguments": {"bbox_2d": [0, 0, 500, 500], "label": "x", "img_idx": 0}}\n</tool_call>'
+# Qwen3.5 (requests carry chat_template_kwargs): the same call in the Qwen3 XML format
+ZOOM_XML = (
+    "<tool_call>\n<function=image_zoom_in_tool>\n<parameter=bbox_2d>\n[0, 0, 500, 500]\n</parameter>\n"
+    "<parameter=label>\nx\n</parameter>\n<parameter=img_idx>\n0\n</parameter>\n</function>\n</tool_call>"
+)
+# What every request sends: the OpenAI fields plus vLLM's extra sampling fields.
+HERMES_REQUEST_KEYS = {"model", "messages", "max_tokens", "temperature", "top_p", "presence_penalty", "seed", "top_k", "repetition_penalty"}
 
 
 class FakeVLLM(BaseHTTPRequestHandler):
@@ -32,7 +39,7 @@ class FakeVLLM(BaseHTTPRequestHandler):
         )
         # with tools: zoom once, then answer correctly; without tools: answer wrong
         if has_tools and not answered_tool:
-            text = "Let me look closer.\n" + ZOOM
+            text = "Let me look closer.\n" + (ZOOM_XML if "chat_template_kwargs" in body else ZOOM)
         else:
             text = 'Done.\n{"answer": %d}' % (2 if has_tools else 1)
         payload = {
@@ -93,6 +100,8 @@ def test_pipeline(tmp_path, endpoint):
     assert len(zoom_lines) == 6
     record = json.loads(zoom_lines[0])
     assert record["n_tool_calls"] == 1 and record["tool_calls"][0]["ok"] and record["turns"] == 2
+    # Hermes families: request bodies carry no chat_template_kwargs (or anything else new)
+    assert all(set(body) == HERMES_REQUEST_KEYS for body in FakeVLLM.requests)
 
     # resume is a no-op, and a changed setting is refused
     n_requests = len(FakeVLLM.requests)
@@ -249,3 +258,56 @@ def test_dry_run_needs_no_out_and_judge_needs_pending(tmp_path, capsys):
         run_eval.main(["--model", "x", "--family", "qwen2.5-vl", "--dataset-path", str(data), "--conditions", "no_tool"])
     with pytest.raises(SystemExit, match="does not exist"):
         judge.main(["--pending", str(tmp_path / "missing.jsonl"), "--out", str(tmp_path / "out.jsonl")])
+
+
+def test_qwen35_xml_pipeline(tmp_path, endpoint):
+    data = tmp_path / "val.parquet"
+    _dataset(data, n=4)
+    out = tmp_path / "runs"
+    common = ["--endpoint", endpoint, "--model", "qwen3.5-4b", "--model-id", "Qwen/Qwen3.5-4B", "--dataset-path", str(data), "--out", str(out)]
+    run_eval.main(common + ["--conditions", "no_tool,zoom,zoom_forced"])
+
+    # every Qwen3.5 request switches thinking off; nothing else is added
+    assert FakeVLLM.requests and all(body["chat_template_kwargs"] == {"enable_thinking": False} for body in FakeVLLM.requests)
+    assert all(set(body) == HERMES_REQUEST_KEYS | {"chat_template_kwargs"} for body in FakeVLLM.requests)
+    tool_requests = [b for b in FakeVLLM.requests if "# Tools" in b["messages"][0]["content"]]
+    assert all(b["messages"][0]["content"].startswith("# Tools\n\nYou have access to the following functions:") for b in tool_requests)
+
+    for name in ("zoom", "zoom_forced"):
+        records = [json.loads(line) for line in (out / name / "seed42" / "responses.jsonl").read_text().splitlines()]
+        assert len(records) == 4
+        for record in records:
+            (call,) = record["tool_calls"]
+            assert call["ok"] and call["arguments"] == {"bbox_2d": [0, 0, 500, 500], "label": "x", "img_idx": 0}
+            assert record["turns"] == 2 and record["stop_reason"] == "answer"
+            assert ("tool_calls_used" in record) == (name == "zoom_forced")
+    forced = json.loads((out / "zoom_forced" / "seed42" / "responses.jsonl").read_text().splitlines()[0])
+    assert {k: forced[k] for k in ("tool_call_budget", "tool_calls_used", "forced_turn", "forced_reason")} == {
+        "tool_call_budget": 10, "tool_calls_used": 1, "forced_turn": False, "forced_reason": None
+    }
+    tool_turn = forced["transcript"][3]["content"]
+    assert tool_turn[-1]["text"] == "\n\n[Tool calls left: 8]\n</tool_response>"
+    assert "You can make at most 10 tool calls in total" in forced["transcript"][0]["content"]
+
+    settings = {n: json.loads((out / n / "seed42" / "run_config.json").read_text())["settings"] for n in ("no_tool", "zoom", "zoom_forced")}
+    assert all(s["family"] == "qwen3.5" and s["tool_format"] == "qwen3_xml" for s in settings.values())
+    assert all(s["chat_template_kwargs"] == {"enable_thinking": False} for s in settings.values())
+    assert "forced_answer" not in settings["zoom"] and settings["zoom_forced"]["forced_answer"] is True
+
+    n_requests = len(FakeVLLM.requests)
+    run_eval.main(common + ["--conditions", "no_tool,zoom,zoom_forced"])  # resume is a no-op
+    assert len(FakeVLLM.requests) == n_requests
+    score_runs.main([str(out), "--dataset-path", str(data)])
+    assert json.loads((out / "zoom_forced" / "seed42" / "summary.json").read_text())["official_acc"] == 1.0
+
+
+@pytest.mark.parametrize("family", ["qwen2.5-vl", "qwen3.5"])
+def test_dry_run_shows_the_budget_statement(tmp_path, capsys, family):
+    data = tmp_path / "val.parquet"
+    _dataset(data, n=1)
+    run_eval.main(["--model", "x", "--family", family, "--dataset-path", str(data), "--conditions", "zoom,zoom_forced", "--dry-run"])
+    printed = capsys.readouterr().out
+    statement = "You can make at most 10 tool calls in total, and at most 2 per turn."
+    assert printed.count(statement) == 1
+    zoom, forced = printed.split("===== zoom_forced")
+    assert statement not in zoom and statement in forced.split("<|user|>")[0]  # in the system message
