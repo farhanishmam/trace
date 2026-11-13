@@ -12,6 +12,10 @@ The tools:
 
 The hypotheses, conditions, statistics and the conditional RL phase are in **[EXPERIMENT_DESIGN.md](EXPERIMENT_DESIGN.md)**.
 
+**Final evaluation (2026-11-12):** MMLU-Pro for Vero-Qwen25-7B and TRACE-Qwen2.5-VL-7B, and TRACE validation for
+Qwen3.8-27B, Qwen3.5-9B, Gemma-4-12B-it and LLaVA-OneVision-2-8B. Findings:
+**[results/final_eval/FINDINGS.md](results/final_eval/FINDINGS.md)**; harnesses: [final_eval/](final_eval/).
+
 ## Layout
 
 ```
@@ -31,6 +35,7 @@ src/trace_tool/compare.py        CLI: paired deltas, bootstrap CI, McNemar + Hol
 src/trace_tool/rl/               Phase-2 scaffold for verl (reward, data prep, tool adapters, tool chat template for Qwen2.5-VL)
 src/trace_tool/vendor/trace_rlvr TRACE scorer + extractor, vendored (Apache-2.0, pinned commit)
 scripts/                         serve_vllm.sh, smoke_test.sh, run_phase1.sh, check_template.py, rl/
+final_eval/                      final evaluation: MMLU-Pro harness (official code vendored), TRACE-val no_tool runs, summarize.py
 tests/                           CPU tests (no GPU or network needed)
 ```
 

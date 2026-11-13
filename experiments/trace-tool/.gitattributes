@@ -1,3 +1,5 @@
 # Reports written by trace-tool-compare / trace-tool-score, kept byte-for-byte
 # as generated (they end with a blank line).
 results/** -whitespace
+# Upstream MMLU-Pro files vendored byte for byte (sha256-pinned); they end with blank lines.
+final_eval/mmlu_pro/official/** -whitespace

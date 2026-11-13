@@ -97,6 +97,8 @@ def read_system_prompt(files: list[str], root: Path = REPO_ROOT) -> str:
 
 
 def build_episode_config(spec: dict[str, Any], *, seed: int, family: ModelFamily, root: Path = REPO_ROOT) -> EpisodeConfig:
+    if spec.get("tools") and family.tool_format == "none":
+        raise RuntimeError(f"family {family.name} has no studied tool-call format; only tool-free conditions can run")
     tools = build_tools(list(spec.get("tools") or []), family)
     return EpisodeConfig(
         system_prompt=read_system_prompt(list(spec["system_prompt_files"]), root),

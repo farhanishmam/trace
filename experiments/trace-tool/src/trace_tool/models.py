@@ -20,6 +20,17 @@ the Qwen3-VL vision grid, but its chat template calls tools in XML, puts the
 tool block before the system prompt and thinks unless ``enable_thinking`` is
 false. ``tool_format`` and ``thinking_off`` carry those differences; the
 defaults describe the older families.
+
+Final evaluation (2026-11-12): three more families, used ONLY for the
+single-turn ``no_tool`` condition (TRACE's validation protocol). Their tool
+conventions were not studied, so ``tool_format="none"`` makes any tool
+condition fail at startup (``conditions.build_episode_config``).
+
+| family | checkpoint | image grid (client-side fit) | thinking |
+| --- | --- | --- | --- |
+| qwen3.8 | Qwen/Qwen3.8-27B (Qwen3_5ForConditionalGeneration) | 16 x 2 = 32 (same processor as Qwen3.5) | off (``enable_thinking: false``; the template then adds no reasoning-effort text) |
+| gemma4 | google/gemma-4-12B-it (Gemma4UnifiedForConditionalGeneration) | 1: TRACE's pixel bounds only, no grid rounding, because Gemma's own processor resizes every image to fill its soft-token budget (rounding to 48 px here first distorted the most extreme aspect ratio by about 14-17%, all others by at most 8.5%) | off (template default; sent explicitly) |
+| llava-onevision-2 | lmms-lab-encoder/LLaVA-OneVision-2-8B-Instruct (Qwen3-8B LM, Qwen2-VL-style processor) | 14 x 2 = 28 | none (the template has no thinking switch) |
 """
 
 from __future__ import annotations
@@ -37,6 +48,10 @@ PINNED_REVISIONS = {
     # Qwen3.5 snapshots whose (identical) chat templates were checked (tests/data/qwen3_5_chat_template.jinja).
     "Qwen/Qwen3.5-4B": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
     "Qwen/Qwen3.5-9B": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+    # final evaluation (2026-11-12): the snapshots that were evaluated
+    "Qwen/Qwen3.8-27B": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "google/gemma-4-12B-it": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "lmms-lab-encoder/LLaVA-OneVision-2-8B-Instruct": "878cde7e04fd962a6082951d8f83083a73fea588",
 }
 
 
@@ -48,6 +63,7 @@ class ModelFamily:
     zoom_min_side: int  # zoom boxes are grown to at least this many pixels per side
     # "hermes": {"name": ..., "arguments": {...}} JSON in <tool_call> (trace_tool.parsing.parse_tool_calls);
     # "qwen3_xml": <tool_call><function=NAME><parameter=KEY>value</parameter>... (parse_xml_tool_calls)
+    # "none": no tool support studied; only tool-free conditions may run (build_episode_config refuses tools)
     tool_format: str = "hermes"
     thinking_off: bool = False  # the chat template thinks by default; send enable_thinking=False
 
@@ -59,7 +75,11 @@ QWEN3_VL = ModelFamily("qwen3-vl", patch_factor=32, coords="rel1000", zoom_min_s
 # relative [0, 1000] box in 12/12 cases, e.g. pixels (1000, 200, 1300, 500) on 1600x800 ->
 # [623, 250, 814, 625] (4B) and [620, 234, 828, 634] (9B), where rel1000 is [625, 250, 812, 625].
 QWEN35 = ModelFamily("qwen3.5", patch_factor=32, coords="rel1000", zoom_min_side=32, tool_format="qwen3_xml", thinking_off=True)
-FAMILIES = {f.name: f for f in (QWEN25_VL, QWEN3_VL, QWEN35)}
+# Final-evaluation families: no_tool only (tool_format "none"); coords/zoom_min_side are unused there.
+QWEN38 = ModelFamily("qwen3.8", patch_factor=32, coords="rel1000", zoom_min_side=32, tool_format="none", thinking_off=True)
+GEMMA4 = ModelFamily("gemma4", patch_factor=1, coords="rel1000", zoom_min_side=48, tool_format="none", thinking_off=True)
+LLAVA_OV2 = ModelFamily("llava-onevision-2", patch_factor=28, coords="abs", zoom_min_side=28, tool_format="none")
+FAMILIES = {f.name: f for f in (QWEN25_VL, QWEN3_VL, QWEN35, QWEN38, GEMMA4, LLAVA_OV2)}
 
 
 def detect_family(model_id: str) -> ModelFamily:
@@ -72,8 +92,16 @@ def detect_family(model_id: str) -> ModelFamily:
         return QWEN3_VL
     if "qwen35" in key:  # after the VL checks: "Qwen/Qwen3.5-4B" -> "qwenqwen354b"
         return QWEN35
+    # the literal "qwen3.8": the normalised key would also match Qwen3-8B ("qwenqwen38b")
+    if re.search(r"qwen3\.8(?![0-9])", model_id.lower()):  # "Qwen/Qwen3.8-27B", served "qwen3.8-27b"
+        return QWEN38
+    if "gemma4" in key:  # "google/gemma-4-12B-it" -> "googlegemma412bit"
+        return GEMMA4
+    if "llavaonevision2" in key:  # "lmms-lab-encoder/LLaVA-OneVision-2-8B-Instruct"
+        return LLAVA_OV2
     raise ValueError(
-        f"cannot tell the model family of {model_id!r} (expected qwen2.5-vl, qwen3-vl or qwen3.5 in the name); "
+        f"cannot tell the model family of {model_id!r} (expected qwen2.5-vl, qwen3-vl, qwen3.5, qwen3.8, gemma-4 "
+        f"or llava-onevision-2 in the name); "
         f"pass --family {'/'.join(FAMILIES)}"
     )
 

@@ -130,7 +130,9 @@ def test_family_fields_and_registry():
     assert QWEN35.tool_format == "qwen3_xml" and QWEN35.thinking_off is True
     for family in (QWEN25_VL, QWEN3_VL):  # the older families keep the defaults
         assert family.tool_format == "hermes" and family.thinking_off is False
-    assert FAMILIES == {"qwen2.5-vl": QWEN25_VL, "qwen3-vl": QWEN3_VL, "qwen3.5": QWEN35}
+    # + the final-evaluation families (no_tool only; tests/test_final_eval.py)
+    assert {k: FAMILIES[k] for k in ("qwen2.5-vl", "qwen3-vl", "qwen3.5")} == {"qwen2.5-vl": QWEN25_VL, "qwen3-vl": QWEN3_VL, "qwen3.5": QWEN35}
+    assert set(FAMILIES) == {"qwen2.5-vl", "qwen3-vl", "qwen3.5", "qwen3.8", "gemma4", "llava-onevision-2"}
     assert get_family("qwen3.5") is QWEN35
     assert PINNED_REVISIONS["Qwen/Qwen3.5-4B"] == "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
     assert PINNED_REVISIONS["Qwen/Qwen3.5-9B"] == "c202236235762e1c871ad0ccb60c8ee5ba337b9a"

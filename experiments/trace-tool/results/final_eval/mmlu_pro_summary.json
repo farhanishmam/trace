@@ -1,0 +1,1092 @@
+{
+ "models": {
+  "vero-qwen25-7b": {
+   "model": "vero-qwen25-7b",
+   "meta": {
+    "model": "zlab-princeton/Vero-Qwen25-7B",
+    "revision": "180e84be5acb2aa887cf51015b84b6a6e453ee90",
+    "shards": 8,
+    "gpu_util": 0.92,
+    "vllm": "0.30.0",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.18.0"
+   },
+   "official_commit": "f418b116db00b065c2aea046518d8fcf74d39872",
+   "dataset": "TIGER-Lab/MMLU-Pro@b189ec765aa7ed75c8acfea42df31fdae71f97be",
+   "total": {
+    "n": 12032,
+    "corr": 6337.0,
+    "wrong": 5695.0,
+    "accu": 0.5266788563392055,
+    "strict_accu": 0.5266788563829787,
+    "no_extraction": 0,
+    "truncated": 9225,
+    "mean_completion_tokens": 1629.9358377659576,
+    "first_regex_rate": 1.0,
+    "shots": {
+     "5": 11722,
+     "4": 200,
+     "3": 83,
+     "2": 24,
+     "1": 3
+    }
+   },
+   "by_category": {
+    "biology": {
+     "corr": 538.0,
+     "wrong": 179.0,
+     "accu": 0.7503486750348675,
+     "n": 717,
+     "strict_corr": 538,
+     "no_extraction": 0,
+     "truncated": 677,
+     "completion_tokens": 1399527
+    },
+    "business": {
+     "corr": 458.0,
+     "wrong": 331.0,
+     "accu": 0.5804816223067174,
+     "n": 789,
+     "strict_corr": 458,
+     "no_extraction": 0,
+     "truncated": 682,
+     "completion_tokens": 1411387
+    },
+    "chemistry": {
+     "corr": 580.0,
+     "wrong": 552.0,
+     "accu": 0.5123674911660777,
+     "n": 1132,
+     "strict_corr": 580,
+     "no_extraction": 0,
+     "truncated": 968,
+     "completion_tokens": 2104395
+    },
+    "computer science": {
+     "corr": 212.0,
+     "wrong": 198.0,
+     "accu": 0.5170731707317073,
+     "n": 410,
+     "strict_corr": 212,
+     "no_extraction": 0,
+     "truncated": 328,
+     "completion_tokens": 695398
+    },
+    "economics": {
+     "corr": 534.0,
+     "wrong": 310.0,
+     "accu": 0.6327014218009479,
+     "n": 844,
+     "strict_corr": 534,
+     "no_extraction": 0,
+     "truncated": 735,
+     "completion_tokens": 1535039
+    },
+    "engineering": {
+     "corr": 397.0,
+     "wrong": 572.0,
+     "accu": 0.40970072239422084,
+     "n": 969,
+     "strict_corr": 397,
+     "no_extraction": 0,
+     "truncated": 853,
+     "completion_tokens": 1784244
+    },
+    "health": {
+     "corr": 430.0,
+     "wrong": 388.0,
+     "accu": 0.5256723716381418,
+     "n": 818,
+     "strict_corr": 430,
+     "no_extraction": 0,
+     "truncated": 469,
+     "completion_tokens": 1017282
+    },
+    "history": {
+     "corr": 183.0,
+     "wrong": 198.0,
+     "accu": 0.48031496062992124,
+     "n": 381,
+     "strict_corr": 183,
+     "no_extraction": 0,
+     "truncated": 305,
+     "completion_tokens": 649242
+    },
+    "law": {
+     "corr": 309.0,
+     "wrong": 792.0,
+     "accu": 0.28065395095367845,
+     "n": 1101,
+     "strict_corr": 309,
+     "no_extraction": 0,
+     "truncated": 578,
+     "completion_tokens": 1260631
+    },
+    "math": {
+     "corr": 862.0,
+     "wrong": 489.0,
+     "accu": 0.6380458919319023,
+     "n": 1351,
+     "strict_corr": 862,
+     "no_extraction": 0,
+     "truncated": 1104,
+     "completion_tokens": 2404541
+    },
+    "other": {
+     "corr": 431.0,
+     "wrong": 493.0,
+     "accu": 0.46645021645021645,
+     "n": 924,
+     "strict_corr": 431,
+     "no_extraction": 0,
+     "truncated": 589,
+     "completion_tokens": 1256757
+    },
+    "philosophy": {
+     "corr": 220.0,
+     "wrong": 279.0,
+     "accu": 0.4408817635270541,
+     "n": 499,
+     "strict_corr": 220,
+     "no_extraction": 0,
+     "truncated": 200,
+     "completion_tokens": 440047
+    },
+    "physics": {
+     "corr": 670.0,
+     "wrong": 629.0,
+     "accu": 0.5157813702848345,
+     "n": 1299,
+     "strict_corr": 670,
+     "no_extraction": 0,
+     "truncated": 1194,
+     "completion_tokens": 2515014
+    },
+    "psychology": {
+     "corr": 513.0,
+     "wrong": 285.0,
+     "accu": 0.6428571428571429,
+     "n": 798,
+     "strict_corr": 513,
+     "no_extraction": 0,
+     "truncated": 543,
+     "completion_tokens": 1137884
+    }
+   },
+   "name": "Vero-Qwen25-7B",
+   "hf_id": "zlab-princeton/Vero-Qwen25-7B",
+   "sensitivity_last_match_strict_accu": 0.49642619680851063
+  },
+  "trace-qwen2.5-vl-7b": {
+   "model": "trace-qwen2.5-vl-7b",
+   "meta": {
+    "model": "maveryn/trace-qwen2.5-vl-7b",
+    "revision": "4d0f1ae8ee25022058090dbdbff61957ece7331d",
+    "shards": 8,
+    "gpu_util": 0.92,
+    "vllm": "0.30.0",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.18.0"
+   },
+   "official_commit": "f418b116db00b065c2aea046518d8fcf74d39872",
+   "dataset": "TIGER-Lab/MMLU-Pro@b189ec765aa7ed75c8acfea42df31fdae71f97be",
+   "total": {
+    "n": 12032,
+    "corr": 6200.0,
+    "wrong": 5832.0,
+    "accu": 0.5152925531486625,
+    "strict_accu": 0.5150432180851063,
+    "no_extraction": 12,
+    "truncated": 10859,
+    "mean_completion_tokens": 1868.0398936170213,
+    "first_regex_rate": 0.9984208776595744,
+    "shots": {
+     "5": 11722,
+     "4": 200,
+     "3": 83,
+     "2": 24,
+     "1": 3
+    }
+   },
+   "by_category": {
+    "biology": {
+     "corr": 512.0,
+     "wrong": 205.0,
+     "accu": 0.7140864714086471,
+     "n": 717,
+     "strict_corr": 512,
+     "no_extraction": 0,
+     "truncated": 531,
+     "completion_tokens": 1103557
+    },
+    "business": {
+     "corr": 480.0,
+     "wrong": 309.0,
+     "accu": 0.6083650190114068,
+     "n": 789,
+     "strict_corr": 480,
+     "no_extraction": 0,
+     "truncated": 639,
+     "completion_tokens": 1339827
+    },
+    "chemistry": {
+     "corr": 553.0,
+     "wrong": 579.0,
+     "accu": 0.48851590106007065,
+     "n": 1132,
+     "strict_corr": 551,
+     "no_extraction": 2,
+     "truncated": 1077,
+     "completion_tokens": 2227953
+    },
+    "computer science": {
+     "corr": 210.0,
+     "wrong": 200.0,
+     "accu": 0.5121951219512195,
+     "n": 410,
+     "strict_corr": 210,
+     "no_extraction": 0,
+     "truncated": 401,
+     "completion_tokens": 822802
+    },
+    "economics": {
+     "corr": 540.0,
+     "wrong": 304.0,
+     "accu": 0.6398104265402843,
+     "n": 844,
+     "strict_corr": 540,
+     "no_extraction": 0,
+     "truncated": 820,
+     "completion_tokens": 1681807
+    },
+    "engineering": {
+     "corr": 356.0,
+     "wrong": 613.0,
+     "accu": 0.3673890608875129,
+     "n": 969,
+     "strict_corr": 356,
+     "no_extraction": 1,
+     "truncated": 887,
+     "completion_tokens": 1830749
+    },
+    "health": {
+     "corr": 419.0,
+     "wrong": 399.0,
+     "accu": 0.5122249388753056,
+     "n": 818,
+     "strict_corr": 419,
+     "no_extraction": 0,
+     "truncated": 736,
+     "completion_tokens": 1515770
+    },
+    "history": {
+     "corr": 171.0,
+     "wrong": 210.0,
+     "accu": 0.44881889763779526,
+     "n": 381,
+     "strict_corr": 171,
+     "no_extraction": 0,
+     "truncated": 309,
+     "completion_tokens": 637728
+    },
+    "law": {
+     "corr": 306.0,
+     "wrong": 795.0,
+     "accu": 0.2779291553133515,
+     "n": 1101,
+     "strict_corr": 306,
+     "no_extraction": 0,
+     "truncated": 1014,
+     "completion_tokens": 2086008
+    },
+    "math": {
+     "corr": 859.0,
+     "wrong": 492.0,
+     "accu": 0.6358253145817913,
+     "n": 1351,
+     "strict_corr": 858,
+     "no_extraction": 5,
+     "truncated": 1129,
+     "completion_tokens": 2401557
+    },
+    "other": {
+     "corr": 444.0,
+     "wrong": 480.0,
+     "accu": 0.4805194805194805,
+     "n": 924,
+     "strict_corr": 444,
+     "no_extraction": 1,
+     "truncated": 862,
+     "completion_tokens": 1772499
+    },
+    "philosophy": {
+     "corr": 209.0,
+     "wrong": 290.0,
+     "accu": 0.4188376753507014,
+     "n": 499,
+     "strict_corr": 209,
+     "no_extraction": 0,
+     "truncated": 465,
+     "completion_tokens": 958961
+    },
+    "physics": {
+     "corr": 644.0,
+     "wrong": 655.0,
+     "accu": 0.49576597382602,
+     "n": 1299,
+     "strict_corr": 644,
+     "no_extraction": 3,
+     "truncated": 1236,
+     "completion_tokens": 2548561
+    },
+    "psychology": {
+     "corr": 497.0,
+     "wrong": 301.0,
+     "accu": 0.6228070175438597,
+     "n": 798,
+     "strict_corr": 497,
+     "no_extraction": 0,
+     "truncated": 753,
+     "completion_tokens": 1548477
+    }
+   },
+   "name": "TRACE-Qwen2.5-VL-7B",
+   "hf_id": "maveryn/trace-qwen2.5-vl-7b",
+   "sensitivity_last_match_strict_accu": 0.4755651595744681
+  },
+  "qwen2.5-vl-7b-instruct": {
+   "model": "qwen2.5-vl-7b-instruct",
+   "meta": {
+    "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+    "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
+    "shards": 4,
+    "gpu_util": 0.92,
+    "vllm": "0.30.0",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.18.0"
+   },
+   "official_commit": "f418b116db00b065c2aea046518d8fcf74d39872",
+   "dataset": "TIGER-Lab/MMLU-Pro@b189ec765aa7ed75c8acfea42df31fdae71f97be",
+   "total": {
+    "n": 12032,
+    "corr": 5866.0,
+    "wrong": 6166.0,
+    "accu": 0.4875332446403313,
+    "strict_accu": 0.4865359042553192,
+    "no_extraction": 80,
+    "truncated": 6805,
+    "mean_completion_tokens": 1211.658909574468,
+    "first_regex_rate": 0.9899434840425532,
+    "shots": {
+     "5": 11722,
+     "4": 200,
+     "3": 83,
+     "2": 24,
+     "1": 3
+    }
+   },
+   "by_category": {
+    "biology": {
+     "corr": 501.0,
+     "wrong": 216.0,
+     "accu": 0.698744769874477,
+     "n": 717,
+     "strict_corr": 501,
+     "no_extraction": 3,
+     "truncated": 286,
+     "completion_tokens": 621097
+    },
+    "business": {
+     "corr": 427.0,
+     "wrong": 362.0,
+     "accu": 0.541191381495564,
+     "n": 789,
+     "strict_corr": 427,
+     "no_extraction": 5,
+     "truncated": 277,
+     "completion_tokens": 635411
+    },
+    "chemistry": {
+     "corr": 489.0,
+     "wrong": 643.0,
+     "accu": 0.43197879858657245,
+     "n": 1132,
+     "strict_corr": 485,
+     "no_extraction": 19,
+     "truncated": 761,
+     "completion_tokens": 1668709
+    },
+    "computer science": {
+     "corr": 203.0,
+     "wrong": 207.0,
+     "accu": 0.4951219512195122,
+     "n": 410,
+     "strict_corr": 201,
+     "no_extraction": 5,
+     "truncated": 51,
+     "completion_tokens": 150812
+    },
+    "economics": {
+     "corr": 516.0,
+     "wrong": 328.0,
+     "accu": 0.6113744075829384,
+     "n": 844,
+     "strict_corr": 516,
+     "no_extraction": 0,
+     "truncated": 85,
+     "completion_tokens": 232721
+    },
+    "engineering": {
+     "corr": 359.0,
+     "wrong": 610.0,
+     "accu": 0.37048503611971106,
+     "n": 969,
+     "strict_corr": 358,
+     "no_extraction": 12,
+     "truncated": 633,
+     "completion_tokens": 1349412
+    },
+    "health": {
+     "corr": 428.0,
+     "wrong": 390.0,
+     "accu": 0.5232273838630807,
+     "n": 818,
+     "strict_corr": 428,
+     "no_extraction": 0,
+     "truncated": 349,
+     "completion_tokens": 749694
+    },
+    "history": {
+     "corr": 161.0,
+     "wrong": 220.0,
+     "accu": 0.4225721784776903,
+     "n": 381,
+     "strict_corr": 161,
+     "no_extraction": 2,
+     "truncated": 107,
+     "completion_tokens": 234888
+    },
+    "law": {
+     "corr": 274.0,
+     "wrong": 827.0,
+     "accu": 0.2488646684831971,
+     "n": 1101,
+     "strict_corr": 274,
+     "no_extraction": 3,
+     "truncated": 686,
+     "completion_tokens": 1433971
+    },
+    "math": {
+     "corr": 780.0,
+     "wrong": 571.0,
+     "accu": 0.5773501110288675,
+     "n": 1351,
+     "strict_corr": 776,
+     "no_extraction": 24,
+     "truncated": 1112,
+     "completion_tokens": 2374405
+    },
+    "other": {
+     "corr": 421.0,
+     "wrong": 503.0,
+     "accu": 0.4556277056277056,
+     "n": 924,
+     "strict_corr": 421,
+     "no_extraction": 0,
+     "truncated": 650,
+     "completion_tokens": 1347029
+    },
+    "philosophy": {
+     "corr": 208.0,
+     "wrong": 291.0,
+     "accu": 0.4168336673346693,
+     "n": 499,
+     "strict_corr": 208,
+     "no_extraction": 0,
+     "truncated": 289,
+     "completion_tokens": 606057
+    },
+    "physics": {
+     "corr": 607.0,
+     "wrong": 692.0,
+     "accu": 0.46728252501924555,
+     "n": 1299,
+     "strict_corr": 606,
+     "no_extraction": 7,
+     "truncated": 1032,
+     "completion_tokens": 2162595
+    },
+    "psychology": {
+     "corr": 492.0,
+     "wrong": 306.0,
+     "accu": 0.6165413533834586,
+     "n": 798,
+     "strict_corr": 492,
+     "no_extraction": 0,
+     "truncated": 487,
+     "completion_tokens": 1011879
+    }
+   },
+   "name": "Qwen2.5-VL-7B-Instruct (base of both)",
+   "hf_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+   "sensitivity_last_match_strict_accu": 0.484125664893617
+  }
+ },
+ "pairwise_strict": {
+  "vero-qwen25-7b - qwen2.5-vl-7b-instruct": {
+   "diff_strict": 0.04014295212765957,
+   "ci95": [
+    0.032164228723404256,
+    0.0481216755319149
+   ],
+   "a_only": 1431,
+   "b_only": 948,
+   "mcnemar_p": 3.5441770505017954e-23,
+   "mcnemar_p_holm": 1.0632531151505386e-22
+  },
+  "trace-qwen2.5-vl-7b - qwen2.5-vl-7b-instruct": {
+   "diff_strict": 0.028507313829787235,
+   "ci95": [
+    0.02152593085106383,
+    0.03548869680851064
+   ],
+   "a_only": 1132,
+   "b_only": 789,
+   "mcnemar_p": 5.136582726187564e-15,
+   "mcnemar_p_holm": 1.0273165452375127e-14
+  },
+  "vero-qwen25-7b - trace-qwen2.5-vl-7b": {
+   "diff_strict": 0.01163563829787234,
+   "ci95": [
+    0.004072473404255319,
+    0.0191156914893617
+   ],
+   "a_only": 1147,
+   "b_only": 1007,
+   "mcnemar_p": 0.0027364405949084764,
+   "mcnemar_p_holm": 0.0027364405949084764
+  }
+ },
+ "chat_protocol": {
+  "models": {
+   "vero-qwen25-7b": {
+    "model": "vero-qwen25-7b",
+    "protocol": "evaluate_from_api.py (chat, one user message, 5-shot CoT) via vLLM, greedy, 4000 tokens",
+    "total": {
+     "n": 12032,
+     "strict_accu": 0.5172872340425532,
+     "no_extraction": 1,
+     "truncated": 1,
+     "mean_completion_tokens": 459.70129654255317,
+     "max_prompt_tokens": 3353
+    },
+    "by_category": {
+     "biology": {
+      "n": 717,
+      "strict_corr": 531,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 238759,
+      "strict_accu": 0.7405857740585774
+     },
+     "business": {
+      "n": 789,
+      "strict_corr": 475,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 415695,
+      "strict_accu": 0.6020278833967047
+     },
+     "chemistry": {
+      "n": 1132,
+      "strict_corr": 569,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 920386,
+      "strict_accu": 0.5026501766784452
+     },
+     "computer science": {
+      "n": 410,
+      "strict_corr": 203,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 177917,
+      "strict_accu": 0.4951219512195122
+     },
+     "economics": {
+      "n": 844,
+      "strict_corr": 542,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 243138,
+      "strict_accu": 0.6421800947867299
+     },
+     "engineering": {
+      "n": 969,
+      "strict_corr": 393,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 550700,
+      "strict_accu": 0.4055727554179567
+     },
+     "health": {
+      "n": 818,
+      "strict_corr": 428,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 256361,
+      "strict_accu": 0.5232273838630807
+     },
+     "history": {
+      "n": 381,
+      "strict_corr": 186,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 119142,
+      "strict_accu": 0.4881889763779528
+     },
+     "law": {
+      "n": 1101,
+      "strict_corr": 305,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 383814,
+      "strict_accu": 0.27702089009990916
+     },
+     "math": {
+      "n": 1351,
+      "strict_corr": 821,
+      "no_extraction": 1,
+      "truncated": 1,
+      "completion_tokens": 927950,
+      "strict_accu": 0.6076980014803849
+     },
+     "other": {
+      "n": 924,
+      "strict_corr": 409,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 260552,
+      "strict_accu": 0.44264069264069267
+     },
+     "philosophy": {
+      "n": 499,
+      "strict_corr": 214,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 155286,
+      "strict_accu": 0.4288577154308617
+     },
+     "physics": {
+      "n": 1299,
+      "strict_corr": 643,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 693649,
+      "strict_accu": 0.49499615088529636
+     },
+     "psychology": {
+      "n": 798,
+      "strict_corr": 505,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 187777,
+      "strict_accu": 0.6328320802005013
+     }
+    },
+    "name": "Vero-Qwen25-7B",
+    "hf_id": "zlab-princeton/Vero-Qwen25-7B"
+   },
+   "trace-qwen2.5-vl-7b": {
+    "model": "trace-qwen2.5-vl-7b",
+    "protocol": "evaluate_from_api.py (chat, one user message, 5-shot CoT) via vLLM, greedy, 4000 tokens",
+    "total": {
+     "n": 12032,
+     "strict_accu": 0.516123670212766,
+     "no_extraction": 181,
+     "truncated": 16,
+     "mean_completion_tokens": 326.9690824468085,
+     "max_prompt_tokens": 2867
+    },
+    "by_category": {
+     "biology": {
+      "n": 717,
+      "strict_corr": 520,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 206480,
+      "strict_accu": 0.7252440725244073
+     },
+     "business": {
+      "n": 789,
+      "strict_corr": 485,
+      "no_extraction": 3,
+      "truncated": 4,
+      "completion_tokens": 288095,
+      "strict_accu": 0.614702154626109
+     },
+     "chemistry": {
+      "n": 1132,
+      "strict_corr": 599,
+      "no_extraction": 2,
+      "truncated": 2,
+      "completion_tokens": 622989,
+      "strict_accu": 0.5291519434628975
+     },
+     "computer science": {
+      "n": 410,
+      "strict_corr": 217,
+      "no_extraction": 1,
+      "truncated": 0,
+      "completion_tokens": 135805,
+      "strict_accu": 0.5292682926829269
+     },
+     "economics": {
+      "n": 844,
+      "strict_corr": 529,
+      "no_extraction": 0,
+      "truncated": 1,
+      "completion_tokens": 198469,
+      "strict_accu": 0.6267772511848341
+     },
+     "engineering": {
+      "n": 969,
+      "strict_corr": 385,
+      "no_extraction": 0,
+      "truncated": 4,
+      "completion_tokens": 519947,
+      "strict_accu": 0.3973168214654283
+     },
+     "health": {
+      "n": 818,
+      "strict_corr": 428,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 166924,
+      "strict_accu": 0.5232273838630807
+     },
+     "history": {
+      "n": 381,
+      "strict_corr": 175,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 57746,
+      "strict_accu": 0.45931758530183725
+     },
+     "law": {
+      "n": 1101,
+      "strict_corr": 272,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 226407,
+      "strict_accu": 0.24704813805631246
+     },
+     "math": {
+      "n": 1351,
+      "strict_corr": 742,
+      "no_extraction": 172,
+      "truncated": 1,
+      "completion_tokens": 623547,
+      "strict_accu": 0.5492227979274611
+     },
+     "other": {
+      "n": 924,
+      "strict_corr": 436,
+      "no_extraction": 0,
+      "truncated": 1,
+      "completion_tokens": 137111,
+      "strict_accu": 0.47186147186147187
+     },
+     "philosophy": {
+      "n": 499,
+      "strict_corr": 208,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 110703,
+      "strict_accu": 0.4168336673346693
+     },
+     "physics": {
+      "n": 1299,
+      "strict_corr": 716,
+      "no_extraction": 3,
+      "truncated": 3,
+      "completion_tokens": 554133,
+      "strict_accu": 0.5511932255581217
+     },
+     "psychology": {
+      "n": 798,
+      "strict_corr": 498,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 85736,
+      "strict_accu": 0.6240601503759399
+     }
+    },
+    "name": "TRACE-Qwen2.5-VL-7B",
+    "hf_id": "maveryn/trace-qwen2.5-vl-7b"
+   },
+   "qwen2.5-vl-7b-instruct": {
+    "model": "qwen2.5-vl-7b-instruct",
+    "protocol": "evaluate_from_api.py (chat, one user message, 5-shot CoT) via vLLM, greedy, 4000 tokens",
+    "total": {
+     "n": 12032,
+     "strict_accu": 0.508560505319149,
+     "no_extraction": 213,
+     "truncated": 116,
+     "mean_completion_tokens": 274.20894281914894,
+     "max_prompt_tokens": 2867
+    },
+    "by_category": {
+     "biology": {
+      "n": 717,
+      "strict_corr": 527,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 90933,
+      "strict_accu": 0.7350069735006973
+     },
+     "business": {
+      "n": 789,
+      "strict_corr": 466,
+      "no_extraction": 5,
+      "truncated": 1,
+      "completion_tokens": 235549,
+      "strict_accu": 0.5906210392902408
+     },
+     "chemistry": {
+      "n": 1132,
+      "strict_corr": 574,
+      "no_extraction": 16,
+      "truncated": 33,
+      "completion_tokens": 701793,
+      "strict_accu": 0.5070671378091873
+     },
+     "computer science": {
+      "n": 410,
+      "strict_corr": 208,
+      "no_extraction": 2,
+      "truncated": 2,
+      "completion_tokens": 89825,
+      "strict_accu": 0.5073170731707317
+     },
+     "economics": {
+      "n": 844,
+      "strict_corr": 525,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 99559,
+      "strict_accu": 0.6220379146919431
+     },
+     "engineering": {
+      "n": 969,
+      "strict_corr": 355,
+      "no_extraction": 30,
+      "truncated": 26,
+      "completion_tokens": 485939,
+      "strict_accu": 0.36635706914344685
+     },
+     "health": {
+      "n": 818,
+      "strict_corr": 432,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 88348,
+      "strict_accu": 0.5281173594132029
+     },
+     "history": {
+      "n": 381,
+      "strict_corr": 174,
+      "no_extraction": 2,
+      "truncated": 0,
+      "completion_tokens": 32521,
+      "strict_accu": 0.4566929133858268
+     },
+     "law": {
+      "n": 1101,
+      "strict_corr": 305,
+      "no_extraction": 2,
+      "truncated": 3,
+      "completion_tokens": 83468,
+      "strict_accu": 0.27702089009990916
+     },
+     "math": {
+      "n": 1351,
+      "strict_corr": 766,
+      "no_extraction": 134,
+      "truncated": 15,
+      "completion_tokens": 604664,
+      "strict_accu": 0.5669874167283494
+     },
+     "other": {
+      "n": 924,
+      "strict_corr": 439,
+      "no_extraction": 3,
+      "truncated": 3,
+      "completion_tokens": 85840,
+      "strict_accu": 0.4751082251082251
+     },
+     "philosophy": {
+      "n": 499,
+      "strict_corr": 202,
+      "no_extraction": 1,
+      "truncated": 2,
+      "completion_tokens": 57430,
+      "strict_accu": 0.40480961923847697
+     },
+     "physics": {
+      "n": 1299,
+      "strict_corr": 659,
+      "no_extraction": 18,
+      "truncated": 31,
+      "completion_tokens": 598587,
+      "strict_accu": 0.5073133179368745
+     },
+     "psychology": {
+      "n": 798,
+      "strict_corr": 487,
+      "no_extraction": 0,
+      "truncated": 0,
+      "completion_tokens": 44826,
+      "strict_accu": 0.6102756892230576
+     }
+    },
+    "name": "Qwen2.5-VL-7B-Instruct (base of both)",
+    "hf_id": "Qwen/Qwen2.5-VL-7B-Instruct"
+   }
+  },
+  "pairwise_strict": {
+   "vero-qwen25-7b - qwen2.5-vl-7b-instruct": {
+    "diff_strict": 0.008726728723404254,
+    "ci95": [
+     0.000581781914893617,
+     0.016622340425531915
+    ],
+    "a_only": 1277,
+    "b_only": 1172,
+    "mcnemar_p": 0.03557161672939294,
+    "mcnemar_p_holm": 0.10671485018817883
+   },
+   "trace-qwen2.5-vl-7b - qwen2.5-vl-7b-instruct": {
+    "diff_strict": 0.007563164893617021,
+    "ci95": [
+     0.0,
+     0.015126329787234043
+    ],
+    "a_only": 1134,
+    "b_only": 1043,
+    "mcnemar_p": 0.05371635284337877,
+    "mcnemar_p_holm": 0.10743270568675754
+   },
+   "vero-qwen25-7b - trace-qwen2.5-vl-7b": {
+    "diff_strict": 0.001163563829787234,
+    "ci95": [
+     -0.007147606382978723,
+     0.009142287234042553
+    ],
+    "a_only": 1229,
+    "b_only": 1215,
+    "mcnemar_p": 0.7925864185590662,
+    "mcnemar_p_holm": 0.7925864185590662
+   }
+  },
+  "format_effect_chat_minus_raw": {
+   "vero-qwen25-7b": {
+    "diff": -0.009391622340425532,
+    "ci95": [
+     -0.01587433510638298,
+     -0.0030751329787234044
+    ],
+    "a_only": 687,
+    "b_only": 800,
+    "mcnemar_p": 0.0036648692317812017
+   },
+   "trace-qwen2.5-vl-7b": {
+    "diff": 0.0010804521276595745,
+    "ci95": [
+     -0.006316489361702127,
+     0.008560505319148936
+    ],
+    "a_only": 1086,
+    "b_only": 1073,
+    "mcnemar_p": 0.7962144590392488
+   },
+   "qwen2.5-vl-7b-instruct": {
+    "diff": 0.022024601063829786,
+    "ci95": [
+     0.014212101063829786,
+     0.029753989361702128
+    ],
+    "a_only": 1282,
+    "b_only": 1017,
+    "mcnemar_p": 3.550684423431919e-08
+   }
+  },
+  "base_by_raw_finish": {
+   "length": {
+    "n": 6805,
+    "raw_strict": 0.4700955180014695,
+    "chat_strict": 0.4925789860396767
+   },
+   "stop": {
+    "n": 5227,
+    "raw_strict": 0.507939544671896,
+    "chat_strict": 0.5293667495695428
+   }
+  },
+  "value_mapped_sensitivity": {
+   "vero-qwen25-7b": {
+    "strict_accu": 0.5173703457446809,
+    "credited": 1,
+    "credited_math": 1,
+    "unextractable": 1,
+    "unextractable_math": 1
+   },
+   "trace-qwen2.5-vl-7b": {
+    "strict_accu": 0.5260970744680851,
+    "credited": 120,
+    "credited_math": 119,
+    "unextractable": 181,
+    "unextractable_math": 172
+   },
+   "qwen2.5-vl-7b-instruct": {
+    "strict_accu": 0.5152094414893617,
+    "credited": 80,
+    "credited_math": 78,
+    "unextractable": 213,
+    "unextractable_math": 134
+   }
+  },
+  "value_mapped_pairwise": {
+   "vero-qwen25-7b - qwen2.5-vl-7b-instruct": {
+    "diff": 0.002160904255319149,
+    "ci95": [
+     -0.00590093085106383,
+     0.00997340425531915
+    ],
+    "a_only": 1217,
+    "b_only": 1191,
+    "mcnemar_p": 0.6104376072195637
+   },
+   "trace-qwen2.5-vl-7b - qwen2.5-vl-7b-instruct": {
+    "diff": 0.010887632978723404,
+    "ci95": [
+     0.003490691489361702,
+     0.01820146276595745
+    ],
+    "a_only": 1124,
+    "b_only": 993,
+    "mcnemar_p": 0.004710427343982091
+   },
+   "vero-qwen25-7b - trace-qwen2.5-vl-7b": {
+    "diff": -0.008726728723404254,
+    "ci95": [
+     -0.016871675531914893,
+     -0.0009142287234042553
+    ],
+    "a_only": 1141,
+    "b_only": 1246,
+    "mcnemar_p": 0.0332603301199401
+   }
+  }
+ }
+}

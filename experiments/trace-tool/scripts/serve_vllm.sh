@@ -16,6 +16,8 @@
 # every judge request failed with HTTP 400 "can only concatenate str (not
 # "list") to str" (2026-10-04 Phase 1 run).
 # The image limit covers 1 input image + 5 tool rounds x 2 calls.
+# SERVE_EXTRA / MM_EXTRA (scripts/_model_env.sh) add per-model flags, e.g. Gemma 4's image token budget;
+# SERVE_EXTRA is word-split, so its values must not contain spaces.
 set -euo pipefail
 
 source "$(dirname "$0")/_model_env.sh"
@@ -29,7 +31,7 @@ MAX_IMAGES=${MAX_IMAGES:-12}
 MM=()
 CONTENT_FORMAT=string
 if [ "$MAX_IMAGES" != 0 ]; then
-  MM=(--limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0}")
+  MM=(--limit-mm-per-prompt "{\"image\": $MAX_IMAGES, \"video\": 0${MM_EXTRA:-}}")
   CONTENT_FORMAT=openai
 fi
 
@@ -43,4 +45,5 @@ exec vllm serve "$MODEL" ${REVISION:+--revision "$REVISION"} \
   ${MM[@]+"${MM[@]}"} \
   --chat-template-content-format "$CONTENT_FORMAT" \
   --generation-config vllm \
+  ${SERVE_EXTRA:+$SERVE_EXTRA} \
   "$@"
